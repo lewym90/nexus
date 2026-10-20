@@ -1,5 +1,5 @@
 // Service worker Nexus – działa pod dowolną ścieżką (np. GitHub Pages: /nexus/)
-const CACHE_NAME = 'nexus-v3';
+const CACHE_NAME = 'nexus-v4';
 const ASSETS = [
   './',
   'index.html',
@@ -9,6 +9,11 @@ const ASSETS = [
   'manifest.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
+  'icons/icon-maskable-512.png',
+  'icons/icon-32.png',
+  'icons/apple-touch-icon-120.png',
+  'icons/apple-touch-icon-152.png',
+  'icons/apple-touch-icon-167.png',
   'icons/apple-touch-icon.png'
 ];
 

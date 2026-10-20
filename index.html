@@ -5,18 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0c0e12">
   <meta name="color-scheme" content="dark light">
+  <meta name="format-detection" content="telephone=no">
   <meta name="description" content="Nexus – precyzyjne notatki. Prywatne, lokalne, bez konta.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Nexus">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <title>Nexus</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="splash" id="splash" aria-hidden="true"><img src="icons/icon-192.png" alt="" width="96" height="96"></div>
+  <div class="scroll-spacer" aria-hidden="true"></div>
+  <div class="status-fill" aria-hidden="true"></div>
   <div class="aurora-bg"></div>
 
   <header class="app-header">
@@ -163,6 +172,7 @@
     </div>
 
     <div class="view editor-view" id="editorView">
+      <div class="editor-sticky">
       <div class="editor-header">
         <button class="icon-btn back-btn" id="backBtn" aria-label="Wróć">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
@@ -187,12 +197,6 @@
           </button>
         </div>
       </div>
-      <div class="trash-banner" id="trashBanner" style="display:none;">
-        <span>Ta notatka jest w koszu.</span>
-        <button class="modal-btn primary" id="restoreBtn">Przywróć</button>
-        <button class="modal-btn danger" id="purgeBtn">Usuń trwale</button>
-      </div>
-      <div class="editor-body">
         <div class="md-toolbar" id="mdToolbar" role="toolbar" aria-label="Formatowanie">
           <button type="button" data-md="h" aria-label="Nagłówek"><b>H</b></button>
           <button type="button" data-md="bold" aria-label="Pogrubienie"><b>B</b></button>
@@ -207,7 +211,14 @@
           <button type="button" data-md="code" aria-label="Kod">&lt;/&gt;</button>
           <button type="button" data-md="link" aria-label="Link do notatki">[[ ]]</button>
         </div>
-        <textarea id="noteContent" class="content-input" aria-label="Treść notatki" placeholder="Zacznij pisać…&#10;&#10;Markdown: **pogrubienie**, *kursywa*, # nagłówki, - listy&#10;[[Nazwa notatki]] do linkowania"></textarea>
+      </div>
+      <div class="trash-banner" id="trashBanner" style="display:none;">
+        <span>Ta notatka jest w koszu.</span>
+        <button class="modal-btn primary" id="restoreBtn">Przywróć</button>
+        <button class="modal-btn danger" id="purgeBtn">Usuń trwale</button>
+      </div>
+      <div class="editor-body">
+        <textarea id="noteContent" class="content-input" aria-label="Treść notatki" placeholder="Zacznij pisać…"></textarea>
         <div id="markdownPreview" class="markdown-preview" style="display:none;"></div>
         <div class="word-count" id="wordCount"></div>
         <div class="editor-meta">

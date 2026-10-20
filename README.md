@@ -54,6 +54,7 @@ Otwórz adres w Safari → **Udostępnij** → **Do ekranu początkowego**.
 | `js/markdown.js`, `js/graph.js`, `js/util.js` | renderer Markdown, graf, funkcje pomocnicze (testowane jednostkowo) |
 | `js/io.js`, `js/nav.js`, `js/ui.js`, `js/state.js`, `js/storage.js` | eksport/import, nawigacja, okna/toasty, stan, localStorage |
 | `sw.js`, `manifest.json` | tryb offline i PWA (skróty, share target) |
+| `icons/` | ikona aplikacji z paczki (180/192/512 + rozmiary iPad, favicon, wersja maskable) |
 | `tests/` | testy jednostkowe (Node) i E2E (Playwright) |
 
 ## Testy
@@ -63,5 +64,7 @@ npm run test:unit            # testy jednostkowe (Node 22, bez zależności)
 pip install playwright && playwright install chromium
 npm run test:e2e             # E2E: widok mobilny i desktop, serwowane spod /nexus/ jak GitHub Pages
 ```
+
+`tests/audit.py` sprawdza układ w 5 rozmiarach ekranu (iPhone, SE, poziomo, iPad, desktop): wypełnienie całego ekranu, brak przepełnień, przyklejony nagłówek edytora.
 
 Testy uruchamiają się też automatycznie w **GitHub Actions** (`.github/workflows/ci.yml`) po każdym pushu i pull requeście.

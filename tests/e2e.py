@@ -77,7 +77,7 @@ def features(pg,ctx,kind,K):
     # wygasanie kosza (>30 dni) przy starcie
     nav(pg,kind,'all'); make_note(pg,kind,'Stara w koszu','z')
     pg.evaluate('(async()=>{const n=nexus.state.notes.find(n=>n.title==="Stara w koszu"); n.deleted=Date.now()-31*86400000; const db=await new Promise(r=>{const q=indexedDB.open("NexusDB");q.onsuccess=()=>r(q.result)}); await new Promise(r=>{const tx=db.transaction("notes","readwrite"); tx.objectStore("notes").put(n); tx.oncomplete=r}); db.close();})()')
-    pg.reload(); pg.wait_for_selector('body[data-ready="1"]')
+    pg.reload(); pg.wait_for_selector('body[data-ready="1"]',state='attached')
     check(K+'expired trash purged on start',pg.evaluate('nexus.state.notes.filter(n=>n.title==="Stara w koszu").length')==0)
 
     # ---- archiwum
@@ -153,7 +153,7 @@ def features(pg,ctx,kind,K):
     # migracja starego formatu (base64 w notatce)
     legacy={'id':'legacy1','title':'Stara z obrazem','content':'x','tags':[],'created':1,'updated':1,'attachments':[{'name':'old.png','type':'image/png','data':'data:image/png;base64,'+base64.b64encode(PNG).decode()}]}
     pg.evaluate('async(n)=>{const db=await new Promise(r=>{const q=indexedDB.open("NexusDB");q.onsuccess=()=>r(q.result)});await new Promise(r=>{const tx=db.transaction("notes","readwrite");tx.objectStore("notes").put(n);tx.oncomplete=r});db.close();}',legacy)
-    pg.reload(); pg.wait_for_selector('body[data-ready="1"]')
+    pg.reload(); pg.wait_for_selector('body[data-ready="1"]',state='attached')
     mig=pg.evaluate('(async()=>{const n=nexus.state.notes.find(n=>n.id==="legacy1");const a=n.attachments[0];const db=await new Promise(r=>{const q=indexedDB.open("NexusDB");q.onsuccess=()=>r(q.result)});const rec=await new Promise(r=>{const q=db.transaction("blobs").objectStore("blobs").get(a.id);q.onsuccess=()=>r(q.result)});db.close();return {id:!!a.id,data:"data" in a,blob:rec&&rec.blob.size>0}})()')
     check(K+'legacy base64 attachment migrated to Blob',mig['id'] and not mig['data'] and mig['blob'],mig)
 

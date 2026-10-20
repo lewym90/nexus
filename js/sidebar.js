@@ -111,6 +111,7 @@ export async function switchWorkspace(id) {
   state.currentWorkspace = id;
   state.currentFolder = null;
   state.currentTag = null;
+  state.animateNext = true;
   saveSettings();
   hooks.renderAll();
 }

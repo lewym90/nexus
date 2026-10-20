@@ -175,12 +175,14 @@ function setupEventListeners() {
   $('backlinksList').addEventListener('click', (e) => { const b = e.target.closest('[data-id]'); if (b) openBacklink(b.dataset.id); });
 
   // wyszukiwanie
+  let searchTimer;
   const onSearch = async (e) => {
     state.searchQuery = e.target.value;
     $('searchInput').value = state.searchQuery;
     $('searchInputMobile').value = state.searchQuery;
     if (state.currentScreen !== 'notes') await showNotes();
-    renderNotes();
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(renderNotes, 60);
   };
   $('searchInput').addEventListener('input', onSearch);
   $('searchInputMobile').addEventListener('input', onSearch);
@@ -190,6 +192,7 @@ function setupEventListeners() {
     setNavView(item.dataset.view);
     state.currentFolder = null;
     state.currentTag = null;
+    state.animateNext = true;
     closeSidebar();
     if (state.currentScreen !== 'notes') await showNotes();
     renderAll();
@@ -299,7 +302,35 @@ function setupEventListeners() {
 
 /* ---------- Start ---------- */
 
+/** Dopasowanie interfejsu do widocznego obszaru (klawiatura iOS): --kb = wysokość klawiatury, --vv-top = przesunięcie. */
+function setupViewportSync() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const root = document.documentElement.style;
+  let raf = 0;
+  const sync = () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const open = kb > 120; // ignoruj drobne różnice (pasek adresu itp.)
+      root.setProperty('--kb', open ? kb + 'px' : '0px');
+      root.setProperty('--vv-top', open ? Math.max(0, vv.offsetTop) + 'px' : '0px');
+    });
+  };
+  vv.addEventListener('resize', sync);
+  vv.addEventListener('scroll', sync);
+}
+
+function hideSplash() {
+  const s = $('splash');
+  if (!s) return;
+  s.classList.add('hide');
+  setTimeout(() => s.remove(), 400);
+}
+
 async function init() {
+  setTimeout(hideSplash, 4000); // zabezpieczenie na wypadek błędu startu
+  setupViewportSync();
   loadSettings();
   try { await initDB(); } catch (e) { state.dbOk = false; console.error('IndexedDB:', e); }
   try { await loadAll(); } catch (e) { console.error(e); }
@@ -321,6 +352,7 @@ async function init() {
   }
   window.nexus = { state, getGraph, hooks, actions: { purgeNote } }; // wygodne do debugowania i testów
   document.body.dataset.ready = '1';
+  hideSplash();
 }
 
 init();

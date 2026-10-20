@@ -78,7 +78,7 @@ function updateFlagIcons() {
 function updateWordCount() {
   const text = $('noteContent').value.trim();
   const words = text ? text.split(/\s+/).length : 0;
-  $('wordCount').textContent = `${words} ${plural(words, 'słowo', 'słowa', 'słów')} · ${text.length} znaków`;
+  $('wordCount').textContent = words ? `${words} ${plural(words, 'słowo', 'słowa', 'słów')} · ${text.length} znaków` : '';
 }
 
 /* ---------- Załączniki (Blob w IndexedDB) ---------- */

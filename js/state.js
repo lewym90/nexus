@@ -20,7 +20,8 @@ export const state = {
   isPreview: false,
   theme: 'dark',
   sidebarCollapsed: false,
-  dbOk: true
+  dbOk: true,
+  animateNext: true // animuj karty tylko przy zmianie widoku, nie przy każdym odświeżeniu
 };
 
 /** Funkcje rejestrowane przez moduły: renderAll, showNotes, leaveEditor, openNote, startNewNote … */

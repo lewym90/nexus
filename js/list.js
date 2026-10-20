@@ -41,6 +41,8 @@ export function renderNotes() {
   const v = state.currentView;
   const filtered = getFilteredNotes();
   grid.classList.toggle('list-view', state.currentLayout === 'list');
+  grid.classList.toggle('animate', state.animateNext);
+  state.animateNext = false;
 
   let title = VIEW_TITLES[v] || 'Notatki';
   if (state.currentFolder) title += ' · ' + folderName(state.currentFolder);

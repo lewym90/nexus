@@ -35,3 +35,6 @@ jobs:
 
       - name: Testy E2E (desktop)
         run: python3 tests/e2e.py desktop
+
+      - name: Audyt układu (wiele rozmiarów ekranu)
+        run: python3 tests/audit.py

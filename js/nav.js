@@ -4,6 +4,7 @@ import { $ } from './ui.js';
 
 export function setView(screen) {
   state.currentScreen = screen;
+  if (screen === 'notes') state.animateNext = true;
   ['notes', 'graph', 'editor'].forEach((v) => $(v + 'View').classList.toggle('active', v === screen));
   document.body.dataset.screen = screen;
   $('mainContent').scrollTop = 0;
