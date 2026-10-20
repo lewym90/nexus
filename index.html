@@ -70,6 +70,14 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         Dziennik
       </button>
+      <button class="nav-item" data-view="archive">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/></svg>
+        Archiwum
+      </button>
+      <button class="nav-item" data-view="trash">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Kosz <span class="nav-count" id="trashCount"></span>
+      </button>
     </nav>
 
     <div class="sidebar-section ws-section">
@@ -104,6 +112,7 @@
     <div class="view notes-view active" id="notesView">
       <div class="notes-header">
         <h1 id="viewTitle">Wszystkie notatki</h1>
+        <button class="text-btn danger" id="emptyTrashBtn" style="display:none;">Opróżnij kosz</button>
         <div class="view-controls">
           <div class="seg">
             <button class="view-btn active" data-layout="grid">Siatka</button>
@@ -116,6 +125,11 @@
           </select>
         </div>
       </div>
+      <form class="quick-bar" id="quickBar" autocomplete="off">
+        <input type="text" id="quickInput" class="quick-input" placeholder="Szybka notatka…" aria-label="Szybka notatka" enterkeyhint="done">
+        <button type="submit" class="quick-btn" aria-label="Dodaj szybką notatkę" title="Dodaj">＋</button>
+        <button type="button" class="quick-btn" id="clipboardBtn" aria-label="Nowa notatka ze schowka" title="Nowa notatka ze schowka">📋</button>
+      </form>
       <input type="search" id="searchInputMobile" placeholder="Szukaj notatek…" class="search-input mobile-search" aria-label="Szukaj notatek" autocomplete="off">
       <div class="active-filters" id="activeFilters"></div>
       <div class="notes-grid" id="notesGrid"></div>
@@ -131,9 +145,20 @@
     <div class="view graph-view" id="graphView">
       <div class="notes-header">
         <h1>Graf powiązań</h1>
-        <button class="text-btn" id="closeGraphBtn">Zamknij</button>
+        <div class="view-controls">
+          <select id="graphTag" class="sort-select" aria-label="Filtr tagu"></select>
+          <button class="text-btn" id="closeGraphBtn">Zamknij</button>
+        </div>
       </div>
-      <canvas id="graphCanvas" aria-label="Graf powiązań między notatkami"></canvas>
+      <div class="graph-wrap">
+        <canvas id="graphCanvas" aria-label="Graf powiązań między notatkami"></canvas>
+        <div class="graph-controls">
+          <button type="button" id="graphZoomIn" aria-label="Przybliż">＋</button>
+          <button type="button" id="graphZoomOut" aria-label="Oddal">－</button>
+          <button type="button" id="graphFit" aria-label="Dopasuj widok" title="Dopasuj">⤢</button>
+          <button type="button" id="graphRelayout" aria-label="Przelicz układ" title="Przelicz układ">↻</button>
+        </div>
+      </div>
       <div id="graphInfo" class="graph-info"></div>
     </div>
 
@@ -154,10 +179,18 @@
           <button class="icon-btn" id="previewToggle" aria-label="Podgląd" title="Podgląd Markdown">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
+          <button class="icon-btn" id="archiveBtn" aria-label="Archiwizuj" title="Archiwizuj">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/></svg>
+          </button>
           <button class="icon-btn delete-btn" id="deleteBtn" aria-label="Usuń" title="Usuń">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           </button>
         </div>
+      </div>
+      <div class="trash-banner" id="trashBanner" style="display:none;">
+        <span>Ta notatka jest w koszu.</span>
+        <button class="modal-btn primary" id="restoreBtn">Przywróć</button>
+        <button class="modal-btn danger" id="purgeBtn">Usuń trwale</button>
       </div>
       <div class="editor-body">
         <div class="md-toolbar" id="mdToolbar" role="toolbar" aria-label="Formatowanie">
@@ -166,6 +199,10 @@
           <button type="button" data-md="italic" aria-label="Kursywa"><i>I</i></button>
           <button type="button" data-md="ul" aria-label="Lista">• Lista</button>
           <button type="button" data-md="task" aria-label="Zadanie">☐ Zadanie</button>
+          <button type="button" data-md="outdent" aria-label="Zmniejsz wcięcie">⇤</button>
+          <button type="button" data-md="indent" aria-label="Zwiększ wcięcie">⇥</button>
+          <button type="button" data-md="table" aria-label="Tabela">▦ Tabela</button>
+          <button type="button" data-md="codeblock" aria-label="Blok kodu">{ }</button>
           <button type="button" data-md="quote" aria-label="Cytat">❝</button>
           <button type="button" data-md="code" aria-label="Kod">&lt;/&gt;</button>
           <button type="button" data-md="link" aria-label="Link do notatki">[[ ]]</button>
@@ -214,6 +251,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

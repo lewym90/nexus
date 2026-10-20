@@ -473,8 +473,8 @@ body.sidebar-collapsed .main-content { margin-left: 0; }
 .markdown-preview > :first-child { margin-top: 0; }
 .markdown-preview p { margin: 0.6em 0; }
 .markdown-preview ul, .markdown-preview ol { margin: 0.5em 0; padding-left: 1.5em; }
-.markdown-preview ul.task-list { list-style: none; padding-left: 0.2em; }
-.markdown-preview li.task { display: flex; gap: 8px; align-items: baseline; }
+.markdown-preview li.task { list-style: none; margin-left: -1.3em; display: flex; gap: 8px; align-items: baseline; border-radius: 6px; }
+.markdown-preview li.task > ul, .markdown-preview li.task > ol { flex-basis: 100%; }
 .markdown-preview li.task input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; transform: translateY(3px); }
 .markdown-preview .done { text-decoration: line-through; color: var(--text-muted); }
 .markdown-preview code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -643,3 +643,56 @@ body.sidebar-collapsed .main-content { margin-left: 0; }
   .view-controls { width: 100%; justify-content: space-between; }
   .logo-text { display: none; }
 }
+
+/* ---------- Kosz / archiwum / szybka notatka ---------- */
+.nav-count { margin-left: auto; font-size: 0.72rem; color: var(--text-muted); }
+.note-card.is-trashed { opacity: 0.75; }
+.trash-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 14px; margin-bottom: 14px;
+  background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 10px;
+  font-size: 0.9rem;
+}
+.trash-banner span { flex: 1; min-width: 140px; }
+.quick-bar { display: flex; gap: 8px; margin-bottom: 14px; }
+.quick-input {
+  flex: 1; min-width: 0;
+  padding: 11px 14px;
+  background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); font-size: 0.95rem; outline: none;
+}
+.quick-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+.quick-btn {
+  flex: none; width: 44px;
+  background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px;
+  font-size: 1.1rem; cursor: pointer; color: var(--text);
+}
+.quick-btn:hover { border-color: var(--accent); }
+.toast.has-action { pointer-events: auto; display: flex; align-items: center; gap: 14px; }
+.toast-action { background: none; border: none; color: var(--accent); font-weight: 600; font-size: 0.9rem; cursor: pointer; padding: 4px 6px; }
+
+/* ---------- Tabele, kod, zadania ---------- */
+.table-wrap { overflow-x: auto; margin: 0.8em 0; }
+.markdown-preview table { border-collapse: collapse; min-width: 50%; font-size: 0.95em; }
+.markdown-preview th, .markdown-preview td { border: 1px solid var(--border); padding: 6px 12px; text-align: left; }
+.markdown-preview th { background: var(--bg-glass); font-weight: 600; }
+.tok-k { color: #c678dd; } .tok-s { color: #98c379; } .tok-c { color: var(--text-muted); font-style: italic; }
+.tok-n { color: #d19a66; } .tok-t { color: #e06c75; }
+body.light .tok-k { color: #8250df; } body.light .tok-s { color: #0a7a3d; } body.light .tok-n { color: #b35900; } body.light .tok-t { color: #cf222e; }
+.drag-handle { cursor: grab; touch-action: none; color: var(--text-muted); user-select: none; -webkit-user-select: none; padding: 0 4px; letter-spacing: -2px; flex: none; }
+.markdown-preview li.dragging { opacity: 0.5; }
+.markdown-preview li.drop-before { box-shadow: 0 -2px 0 var(--accent); }
+.markdown-preview li.drop-after { box-shadow: 0 2px 0 var(--accent); }
+.markdown-preview li > ul, .markdown-preview li > ol { margin: 0.2em 0; }
+
+/* ---------- Graf: panel i sterowanie ---------- */
+.graph-wrap { position: relative; }
+.graph-controls { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.graph-controls button {
+  width: 38px; height: 38px;
+  background: var(--bg-header); border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); font-size: 1.1rem; cursor: pointer;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.graph-controls button:hover { border-color: var(--accent); }
+#graphCanvas { touch-action: none; cursor: grab; }

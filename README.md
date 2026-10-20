@@ -6,18 +6,26 @@ Aplikacja do notatek działająca w całości w przeglądarce (PWA). Bez konta, 
 
 ## Funkcje
 
-- **Markdown** z podglądem: nagłówki, listy, zadania `- [ ]` (klikane w podglądzie), cytaty, kod, linki, `~~przekreślenie~~`
-- **Pasek formatowania** (H, B, I, lista, zadanie, cytat, kod, `[[ ]]`) i automatyczna kontynuacja list po Enter
-- **Linki między notatkami** `[[Tytuł]]` / `[[Tytuł|etykieta]]`, panel „Linkują tutaj" i **graf powiązań** (dotknij węzła, aby otworzyć)
-- **Foldery** (tworzenie, zmiana nazwy, usuwanie) i **przestrzenie robocze** (tworzenie, zmiana nazwy, usuwanie)
-- **Tagi** z licznikami i filtrowaniem, wyszukiwarka (Ctrl/⌘ K)
-- Widok siatki / listy, sortowanie, przypinanie, ulubione, kolory notatek
-- **Dziennik** – jedno dotknięcie „Nowa" w widoku Dziennik otwiera dzisiejszy wpis
-- **Szablony** (w tym własne – „Zapisz jako szablon")
-- **Załączniki-obrazy** (automatycznie zmniejszane do 1600 px)
-- Gesty: przesunięcie karty w prawo = ulubione, w lewo = usuń (z potwierdzeniem)
-- Motyw jasny/ciemny, działa offline, autozapis
-- Eksport / import kopii zapasowej JSON (import scala dane, nie nadpisuje)
+**Notatki i Markdown**
+- Podgląd Markdown: nagłówki, **tabele** (z wyrównaniem), **zagnieżdżone listy**, zadania `- [ ]` (klikane, **przeciągane** za uchwyt ⋮⋮ – razem z podpunktami), cytaty, linki, `~~przekreślenie~~`
+- **Bloki kodu z podświetlaniem składni** (js/ts, python, bash, sql, css, json, yaml, html)
+- Pasek formatowania (H, B, I, lista, zadanie, wcięcia ⇤ ⇥, tabela, blok kodu, cytat, `[[ ]]`), kontynuacja list po Enter, Tab / Shift+Tab zmienia wcięcie
+- Linki `[[Tytuł]]` / `[[Tytuł|etykieta]]`, panel „Linkują tutaj"
+- **Graf powiązań**: przesuwanie tła i węzłów, zoom (kółko / pinch / przyciski), dopasowanie widoku, filtr po tagu
+
+**Porządek**
+- Foldery i przestrzenie robocze (tworzenie, zmiana nazwy, usuwanie), tagi z licznikami, wyszukiwarka (Ctrl/⌘ K)
+- **Kosz** (30 dni, z przyciskiem „Cofnij") i **Archiwum**; przypinanie, ulubione, kolory, sortowanie, siatka/lista
+- **Dziennik** – „Nowa" w widoku Dziennik otwiera dzisiejszy wpis; szablony (też własne)
+
+**Szybkie przechwytywanie**
+- Pole „Szybka notatka…" nad listą (Enter), przycisk 📋 – nowa notatka ze schowka
+- Skróty PWA (przytrzymaj ikonę): *Nowa notatka*, *Dziennik na dziś*, *Notatka ze schowka*; adresy `?action=new|journal|clipboard` (np. do aplikacji Skróty na iOS)
+- **Udostępnianie do Nexusa** (Share Target) – działa w zainstalowanej PWA na Androidzie/Chrome; iOS nie wspiera tej funkcji, tam użyj schowka lub Skrótów
+
+**Dane**
+- Załączniki-obrazy zapisywane jako **Blob w IndexedDB** (automatycznie zmniejszane do 1600 px); stare notatki z base64 są migrowane przy starcie
+- Eksport / import kopii JSON (z obrazami; import scala dane), działa offline, autozapis
 
 ## Uruchomienie / publikacja (GitHub Pages)
 
@@ -37,8 +45,23 @@ Otwórz adres w Safari → **Udostępnij** → **Do ekranu początkowego**.
 
 | Plik | Opis |
 |---|---|
-| `index.html` | struktura interfejsu |
-| `styles.css` | style (motyw ciemny/jasny, responsywność) |
-| `app.js` | cała logika aplikacji |
-| `sw.js` | Service Worker (praca offline) |
-| `manifest.json` | manifest PWA |
+| `index.html`, `styles.css` | interfejs i style (ciemny/jasny motyw, responsywność) |
+| `js/main.js` | start aplikacji, zdarzenia, parametry uruchomienia |
+| `js/editor.js` | edytor, autozapis, załączniki, przeciąganie zadań |
+| `js/list.js`, `js/sidebar.js`, `js/templates.js` | lista notatek, panel boczny, szablony |
+| `js/actions.js` | kosz, archiwum, szybkie notatki |
+| `js/db.js` | IndexedDB (notatki + Blob-y), migracje |
+| `js/markdown.js`, `js/graph.js`, `js/util.js` | renderer Markdown, graf, funkcje pomocnicze (testowane jednostkowo) |
+| `js/io.js`, `js/nav.js`, `js/ui.js`, `js/state.js`, `js/storage.js` | eksport/import, nawigacja, okna/toasty, stan, localStorage |
+| `sw.js`, `manifest.json` | tryb offline i PWA (skróty, share target) |
+| `tests/` | testy jednostkowe (Node) i E2E (Playwright) |
+
+## Testy
+
+```bash
+npm run test:unit            # testy jednostkowe (Node 22, bez zależności)
+pip install playwright && playwright install chromium
+npm run test:e2e             # E2E: widok mobilny i desktop, serwowane spod /nexus/ jak GitHub Pages
+```
+
+Testy uruchamiają się też automatycznie w **GitHub Actions** (`.github/workflows/ci.yml`) po każdym pushu i pull requeście.

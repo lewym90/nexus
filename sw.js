@@ -1,10 +1,11 @@
 // Service worker Nexus – działa pod dowolną ścieżką (np. GitHub Pages: /nexus/)
-const CACHE_NAME = 'nexus-v2';
+const CACHE_NAME = 'nexus-v3';
 const ASSETS = [
   './',
   'index.html',
   'styles.css',
-  'app.js',
+  'js/main.js', 'js/util.js', 'js/storage.js', 'js/ui.js', 'js/state.js', 'js/db.js', 'js/markdown.js', 'js/nav.js',
+  'js/actions.js', 'js/list.js', 'js/sidebar.js', 'js/editor.js', 'js/templates.js', 'js/io.js', 'js/graph.js',
   'manifest.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
