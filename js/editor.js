@@ -323,6 +323,7 @@ export async function leaveEditor() {
   if (!state.editing) return;
   await saveCurrentNote();
   state.editing = null;
+  if (hooks.dataChanged) hooks.dataChanged(); // pobieranie czekało na wyjście z edytora
 }
 
 /* ---------- Kosz / archiwum / flagi ---------- */
@@ -456,6 +457,24 @@ export function handleEditorKeys(e) {
     ta.setRangeText('\n' + m[1] + marker, pos, pos, 'end');
   }
   onContentChanged();
+}
+
+/** Przewija pole tekstowe tak, aby kursor był widoczny (po zmniejszeniu pola przez klawiaturę). */
+export function revealCaret(ta = $('noteContent')) {
+  const cs = getComputedStyle(ta);
+  const mirror = document.createElement('div');
+  mirror.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;';
+  ['fontFamily', 'fontSize', 'fontWeight', 'letterSpacing', 'lineHeight'].forEach((p) => { mirror.style[p] = cs[p]; });
+  mirror.style.width = ta.clientWidth + 'px';
+  mirror.textContent = ta.value.slice(0, ta.selectionEnd);
+  const mark = document.createElement('span');
+  mark.textContent = '​';
+  mirror.appendChild(mark);
+  document.body.appendChild(mirror);
+  const y = mark.offsetTop;
+  mirror.remove();
+  const line = parseFloat(cs.lineHeight) || 24;
+  if (y < ta.scrollTop || y + line > ta.scrollTop + ta.clientHeight) ta.scrollTop = Math.max(0, y - ta.clientHeight / 3);
 }
 
 export function setAuraFromUI(color) {

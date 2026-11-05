@@ -1,5 +1,5 @@
 // IndexedDB: notatki (store "notes") i załączniki jako Blob (store "blobs", od wersji 3).
-import { DEFAULT_AURA, state } from './state.js';
+import { DEFAULT_AURA, state, hooks } from './state.js';
 import { generateId } from './util.js';
 
 const DB_NAME = 'NexusDB';
@@ -70,8 +70,9 @@ export function normalizeNote(n) {
   };
 }
 
-export const putNote = (note) => run([NOTES], 'readwrite', (s) => s.put(note));
-export const deleteNoteRecord = (id) => run([NOTES], 'readwrite', (s) => s.delete(id));
+const changed = (result) => { if (hooks.dataChanged) hooks.dataChanged(); return result; };
+export const putNote = (note) => run([NOTES], 'readwrite', (s) => s.put(note)).then(changed);
+export const deleteNoteRecord = (id) => run([NOTES], 'readwrite', (s) => s.delete(id)).then(changed);
 
 export async function loadNotes() {
   const all = await run([NOTES], 'readonly', (s) => s.getAll());
