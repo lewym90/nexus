@@ -5,16 +5,29 @@ export DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1
 main() {
 [ "$(id -u)" -eq 0 ] || { echo "Uruchom przez sudo."; exit 1; }
 command -v caddy >/dev/null || { echo "STOP: ten skrypt wymaga działającego Caddy."; exit 2; }
+command -v ss >/dev/null || { echo "STOP: brak polecenia ss, nie sprawdzę portów."; exit 2; }
 IP=$(curl -4fsS https://api.ipify.org)
 HOST="${IP//./-}.sslip.io"
-PORT=18872
-if ss -ltnpH "( sport = :$PORT )" | grep -v node | grep -q .; then echo "STOP: port $PORT jest zajęty."; exit 2; fi
 CF=/etc/caddy/Caddyfile
 if ! grep -q 'conf.d' "$CF"; then echo "STOP: Caddyfile nie wczytuje conf.d. Nic nie zmieniam."; exit 2; fi
 DIR=/opt/nexus-sync
 DATA=/var/lib/nexus-sync
 ENVF=/etc/nexus-sync.env
-command -v node >/dev/null || { apt-get update -qq; timeout 600 apt-get install -y -qq -o Dpkg::Options::=--force-confold nodejs >/dev/null; }
+ROUTE=/etc/caddy/conf.d/nexus-sync.caddy
+UNIT=/etc/systemd/system/nexus-sync.service
+# Adres /nexus-sync/ nie może należeć do innej aplikacji.
+if grep -rlsE '/nexus-sync(/|\b)' /etc/caddy | grep -qv "^$ROUTE$"; then echo "STOP: trasa /nexus-sync jest już użyta w Caddy. Nic nie zmieniam."; exit 2; fi
+# Port: zajęty to taki, którego ktoś słucha albo który ma zapisany w konfiguracji inna aplikacja (nawet wyłączona).
+OWN_PID=$(systemctl show -p MainPID --value nexus-sync 2>/dev/null || echo 0)
+listening_foreign() { ss -ltnpH "( sport = :$1 )" | grep -q . && ! ss -ltnpH "( sport = :$1 )" | grep -q "pid=${OWN_PID:-0},"; }
+reserved_foreign() { grep -rlsE "(^|[^0-9])$1([^0-9]|$)" /etc/caddy /etc/systemd/system /etc/*.env 2>/dev/null | grep -qvE "^($ROUTE|$UNIT|$ENVF)$"; }
+free_port() { ! listening_foreign "$1" && ! reserved_foreign "$1"; }
+PORT=""
+OLD_PORT=$(sed -n 's/^PORT=//p' "$ENVF" 2>/dev/null || true)
+for P in $OLD_PORT $(seq 18872 18999); do free_port "$P" && { PORT=$P; break; }; done
+[ -n "$PORT" ] || { echo "STOP: brak wolnego portu w zakresie 18872-18999."; exit 2; }
+if ! command -v node >/dev/null; then apt-get update -qq; timeout 600 apt-get install -y -qq -o Dpkg::Options::=--force-confold nodejs >/dev/null; fi
+[ "$(node -p 'parseInt(process.versions.node)')" -ge 18 ] || { echo "STOP: potrzebny Node 18 lub nowszy. Nie aktualizuję go, bo mogą z niego korzystać inne aplikacje."; exit 2; }
 id nexussync >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin nexussync
 mkdir -p "$DIR" "$DATA"
 BRANCH="${NEXUS_BRANCH:-main}"
@@ -29,7 +42,8 @@ if [ ! -f "$ENVF" ]; then
   printf 'TOKEN=%s\nPORT=%s\nDATA_DIR=%s\n' "$TOKEN" "$PORT" "$DATA" > "$ENVF"
   chown nexussync: "$ENVF"
 fi
-cat > /etc/systemd/system/nexus-sync.service <<EOF
+sed -i "s/^PORT=.*/PORT=$PORT/" "$ENVF"
+cat > "$UNIT" <<EOF
 [Unit]
 Description=Nexus sync
 After=network-online.target
@@ -42,15 +56,22 @@ Restart=always
 NoNewPrivileges=true
 ProtectSystem=strict
 ReadWritePaths=$DATA
+PrivateTmp=true
+Nice=10
+MemoryMax=256M
+CPUQuota=50%
 [Install]
 WantedBy=multi-user.target
 EOF
-printf 'handle_path /nexus-sync/* {\n\treverse_proxy 127.0.0.1:%s\n}\n' "$PORT" > /etc/caddy/conf.d/nexus-sync.caddy
-caddy validate --config "$CF" --adapter caddyfile >/dev/null
+# Zła trasa w conf.d zablokowałaby przeładowanie Caddy wszystkim aplikacjom: przy błędzie wraca poprzedni stan.
+OLD_ROUTE=""; [ -f "$ROUTE" ] && OLD_ROUTE=$(cat "$ROUTE")
+undo_route() { if [ -n "$OLD_ROUTE" ]; then printf '%s\n' "$OLD_ROUTE" > "$ROUTE"; else rm -f "$ROUTE"; fi; }
+printf 'handle_path /nexus-sync/* {\n\treverse_proxy 127.0.0.1:%s\n}\n' "$PORT" > "$ROUTE"
+if ! caddy validate --config "$CF" --adapter caddyfile >/dev/null 2>&1; then undo_route; echo "STOP: Caddy odrzucił konfigurację. Cofnąłem trasę, inne aplikacje działają bez zmian."; exit 2; fi
 systemctl daemon-reload
 systemctl enable --now nexus-sync >/dev/null
 systemctl restart nexus-sync
-systemctl reload caddy
+if ! systemctl reload caddy; then undo_route; systemctl reload caddy || true; echo "STOP: przeładowanie Caddy nie powiodło się. Cofnąłem trasę."; exit 2; fi
 sleep 3
 curl -fsS "https://$HOST/nexus-sync/health" >/dev/null && STATUS=OK || STATUS="BŁĄD: https://$HOST/nexus-sync/health nie odpowiada"
 echo

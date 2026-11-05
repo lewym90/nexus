@@ -14,10 +14,16 @@ Prywatne notatki PWA po polsku: czysty JS (moduły ES), bez frameworka i builda.
 - Mapa plików: tabela „Struktura” w `README.md`.
 
 ## Synchronizacja
-- Serwer: `server/index.mjs`, port 18872, trasa `/nexus-sync/` w `/etc/caddy/conf.d/nexus-sync.caddy`, dane w `/var/lib/nexus-sync`, usługa `nexus-sync`. Nigdy nie nadpisywać Caddyfile.
+- Serwer: `server/index.mjs`, port wybierany przez instalator od 18872 (zapisany w `/etc/nexus-sync.env`), trasa `/nexus-sync/` w `/etc/caddy/conf.d/nexus-sync.caddy`, dane w `/var/lib/nexus-sync`, usługa `nexus-sync`. Nigdy nie nadpisywać Caddyfile.
 - Kod `https://serwer/nexus-sync#sekret`: z sekretu powstają token (SHA-256 `nexus-auth:`) i klucz AES-GCM (SHA-256 `nexus-enc:`). Na serwerze jest tylko token. Zgubiony kod oznacza niemożliwy do odczytania serwer, ale urządzenia zachowują dane.
 - `js/sync.js`: najpierw pobieranie, potem wysyłanie. Zmiany wykrywa skrót względem mapy `map` w localStorage, więc kod notatek nic o synchronizacji nie wie. Przy otwartym edytorze pobieranie czeka.
 - `tests/sync.py` uruchamia prawdziwy serwer i kilka urządzeń.
+
+## Współistnienie z innymi aplikacjami
+- Wszystkie PWA pod `lewym90.github.io` dzielą Cache Storage, localStorage i IndexedDB. Większość innych aplikacji przy aktualizacji kasuje wszystkie cudze cache.
+- Nexus kasuje tylko `nexus-v*`, ma kopię plików w bazie `nexus-shell`, a klucze localStorage mają prefiks `nexus-`. Test: `tests/isolation.py`.
+- Przycisk resetu w innej aplikacji (zakupy, warsztat, nawigacja, operatszacunkowy, egida, Rezonans) wyrejestrowuje service workery całego adresu. Nexus wraca do działania offline po pierwszym uruchomieniu z siecią, a notatki są bezpieczne.
+- Instalator: sprawdza port (w użyciu albo zapisany w konfiguracji innej aplikacji) i trasę, cofa zmiany w conf.d przy błędzie Caddy, limity usługi 256 MB i 50% CPU.
 
 ## Ważne pułapki
 - Klawiatura iOS: `setupViewportSync` w `js/main.js`, obliczenia w `keyboardMetrics` (`js/util.js`). Nie odejmować `offsetTop` przy wykrywaniu klawiatury, bo iOS przesuwa widok i otwarta klawiatura wygląda wtedy jak zamknięta. `tests/keyboard.py` to tylko symulacja, nie zastępuje prawdziwego iPhone'a.
@@ -34,5 +40,4 @@ Prywatne notatki PWA po polsku: czysty JS (moduły ES), bez frameworka i builda.
 - Zmiana tytułu notatki powinna aktualizować linki `[[...]]`.
 - Powrót z notatki do grafu kasuje filtr, zoom i układ.
 - Import nadpisujący notatkę zostawia jej stare obrazy w bazie.
-- Service worker zapisuje w cache adresy z `?text=...`.
 - Wyszukiwarka nie ignoruje polskich znaków.

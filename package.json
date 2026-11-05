@@ -6,7 +6,7 @@
   "description": "Nexus – prywatne notatki (PWA)",
   "scripts": {
     "test:unit": "node --test tests/*.test.mjs",
-    "test:e2e": "python3 tests/e2e.py mobile && python3 tests/e2e.py desktop && python3 tests/keyboard.py && python3 tests/sync.py && python3 tests/audit.py",
+    "test:e2e": "python3 tests/e2e.py mobile && python3 tests/e2e.py desktop && python3 tests/keyboard.py && python3 tests/sync.py && python3 tests/isolation.py && python3 tests/audit.py",
     "test": "npm run test:unit && npm run test:e2e",
     "serve": "python3 -m http.server 8080"
   }
