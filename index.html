@@ -187,6 +187,9 @@
         <input type="text" id="noteTitle" class="title-input" placeholder="Tytuł notatki…" aria-label="Tytuł notatki" autocomplete="off">
         <div class="editor-actions">
           <span id="saveStatus" class="save-status" aria-live="polite"></span>
+          <button class="icon-btn" id="privateBtn" aria-label="Notatka dostępna na wszystkich urządzeniach" title="Dostępna na wszystkich urządzeniach">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path id="privateShackle" d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
+          </button>
           <button class="icon-btn" id="pinBtn" aria-label="Przypnij" title="Przypnij">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
           </button>
@@ -229,6 +232,13 @@
         <div id="markdownPreview" class="markdown-preview" style="display:none;"></div>
         <div class="word-count" id="wordCount"></div>
         <div class="editor-meta">
+          <div class="meta-row">
+            <span>Dostęp:</span>
+            <div class="seg" id="accessSeg" role="group" aria-label="Dostępność notatki">
+              <button type="button" class="view-btn" data-private="0">Wszystkie urządzenia</button>
+              <button type="button" class="view-btn" data-private="1">Tylko to urządzenie</button>
+            </div>
+          </div>
           <div class="meta-row tags-input-wrapper">
             <span>Tagi:</span>
             <input type="text" id="tagsInput" placeholder="tagi oddzielone przecinkami" autocomplete="off" autocapitalize="none">
