@@ -16,11 +16,13 @@ ENVF=/etc/nexus-sync.env
 ROUTE=/etc/caddy/conf.d/nexus-sync.caddy
 UNIT=/etc/systemd/system/nexus-sync.service
 # Adres /nexus-sync/ nie może należeć do innej aplikacji.
-if grep -rlsE '/nexus-sync(/|\b)' /etc/caddy | grep -qv "^$ROUTE$"; then echo "STOP: trasa /nexus-sync jest już użyta w Caddy. Nic nie zmieniam."; exit 2; fi
+# Wyniki trafiają do zmiennych: przy pipefail potok z grep -q potrafi fałszywie zgłosić „nic nie znaleziono”.
+foreign_files() { grep -rlsE "$1" "${@:2}" 2>/dev/null | grep -vE "^($ROUTE|$UNIT|$ENVF)$" || true; }
+if [ -n "$(foreign_files '/nexus-sync(/|\b)' /etc/caddy)" ]; then echo "STOP: trasa /nexus-sync jest już użyta w Caddy. Nic nie zmieniam."; exit 2; fi
 # Port: zajęty to taki, którego ktoś słucha albo który ma zapisany w konfiguracji inna aplikacja (nawet wyłączona).
 OWN_PID=$(systemctl show -p MainPID --value nexus-sync 2>/dev/null || echo 0)
-listening_foreign() { ss -ltnpH "( sport = :$1 )" | grep -q . && ! ss -ltnpH "( sport = :$1 )" | grep -q "pid=${OWN_PID:-0},"; }
-reserved_foreign() { grep -rlsE "(^|[^0-9])$1([^0-9]|$)" /etc/caddy /etc/systemd/system /etc/*.env 2>/dev/null | grep -qvE "^($ROUTE|$UNIT|$ENVF)$"; }
+listening_foreign() { local L; L=$(ss -ltnpH "( sport = :$1 )" || true); [ -n "$L" ] && [[ "$L" != *"pid=${OWN_PID:-0},"* ]]; }
+reserved_foreign() { [ -n "$(foreign_files "(^|[^0-9])$1([^0-9]|\$)" /etc/caddy /etc/systemd/system /etc/*.env)" ]; }
 free_port() { ! listening_foreign "$1" && ! reserved_foreign "$1"; }
 PORT=""
 OLD_PORT=$(sed -n 's/^PORT=//p' "$ENVF" 2>/dev/null || true)
