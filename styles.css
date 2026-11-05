@@ -682,7 +682,9 @@ body.sidebar-collapsed .main-content { left: 0; }
   .editor-header .title-input { order: 3; flex-basis: 100%; }
   .editor-header .editor-actions { margin-left: auto; }
   .notes-grid { grid-template-columns: 1fr; }
-  .view-controls { width: 100%; justify-content: space-between; }
+  .view-controls { width: 100%; justify-content: space-between; min-width: 0; }
+  .view-controls .seg { flex: none; }
+  .view-controls .sort-select { flex: 0 1 auto; min-width: 0; }
   .logo-text { display: none; }
 }
 
