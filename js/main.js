@@ -4,7 +4,7 @@ import { $, isMobile, showToast, closeModal, isModalOpen, askConfirm } from './u
 import { readLS, LS } from './storage.js';
 import { initDB, loadNotes, migrateLegacyAttachments, revokeAllBlobURLs } from './db.js';
 import { findNoteByTitle } from './state.js';
-import { todayStr, deriveQuickNote } from './util.js';
+import { todayStr, deriveQuickNote, keyboardMetrics } from './util.js';
 import { setView, pushScreen, showNotes, goBack } from './nav.js';
 import { renderNotes, setupGridInteractions } from './list.js';
 import {
@@ -14,10 +14,10 @@ import {
 import {
   registerEditorHooks, startNewNote, openNote, leaveEditor, saveCurrentNote, deleteCurrentNote, restoreCurrentNote, toggleArchiveCurrent,
   toggleFlag, togglePreview, onPreviewClick, setupTaskDrag, scheduleSave, onContentChanged, applyMarkdown, handleEditorKeys,
-  addAttachments, showAttachment, openBacklink, setAuraFromUI
+  addAttachments, showAttachment, openBacklink, setAuraFromUI, revealCaret
 } from './editor.js';
 import { loadTemplates, openTemplatePicker, saveAsTemplate, applyTemplateVars } from './templates.js';
-import { exportData, importData } from './io.js';
+import { exportData, importData, renderBackup, snoozeBackup } from './io.js';
 import { initGraph, rebuildGraph, drawGraph, getGraph } from './graph.js';
 import { emptyTrash, purgeExpired, purgeNote, createQuickNote, createNoteFrom } from './actions.js';
 
@@ -59,6 +59,7 @@ function renderAll() {
   updateTags();
   updateFolderSelect();
   renderNotes();
+  renderBackup();
 }
 
 Object.assign(hooks, { renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
@@ -257,6 +258,8 @@ function setupEventListeners() {
   $('graphBtn').addEventListener('click', showGraph);
   $('closeGraphBtn').addEventListener('click', goBack);
   $('exportBtn').addEventListener('click', exportData);
+  $('backupNowBtn').addEventListener('click', exportData);
+  $('backupLaterBtn').addEventListener('click', snoozeBackup);
   $('importBtn').addEventListener('click', importData);
 
   // historia przeglądarki / gest „wstecz”
@@ -302,23 +305,46 @@ function setupEventListeners() {
 
 /* ---------- Start ---------- */
 
-/** Dopasowanie interfejsu do widocznego obszaru (klawiatura iOS): --kb = wysokość klawiatury, --vv-top = przesunięcie. */
+/**
+ * Dopasowanie interfejsu do widocznego obszaru (klawiatura iOS): --kb = wysokość klawiatury, --vv-top = przesunięcie.
+ * html.kb-open = klawiatura otwarta, html.kb-text = dodatkowo pisanie w treści notatki (edytor zajmuje cały widoczny obszar).
+ */
 function setupViewportSync() {
   const vv = window.visualViewport;
   if (!vv) return;
-  const root = document.documentElement.style;
-  let raf = 0;
+  const html = document.documentElement;
+  const isField = (el) => !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || (el.tagName === 'INPUT' && !['file', 'checkbox'].includes(el.type)));
+  let baseH = Math.max(window.innerHeight, vv.height);
+  let wasOpen = false, wasText = false, raf = 0;
   const sync = () => {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
-      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      const open = kb > 120; // ignoruj drobne różnice (pasek adresu itp.)
-      root.setProperty('--kb', open ? kb + 'px' : '0px');
-      root.setProperty('--vv-top', open ? Math.max(0, vv.offsetTop) + 'px' : '0px');
+      const active = document.activeElement;
+      const field = isField(active);
+      if (!field) baseH = Math.max(window.innerHeight, vv.height); // poza polem tekstowym klawiatury nie ma
+      const m = keyboardMetrics(baseH, vv.height, vv.offsetTop);
+      const open = m.open && field && vv.scale < 1.05; // powiększenie palcami też zmniejsza visualViewport
+      const text = open && active.id === 'noteContent';
+      html.style.setProperty('--kb', open ? m.kb + 'px' : '0px');
+      html.style.setProperty('--vv-top', open ? m.top + 'px' : '0px');
+      html.classList.toggle('kb-open', open);
+      html.classList.toggle('kb-text', text);
+      if (open && window.scrollY) window.scrollTo(0, 0);
+      if (!open && wasOpen) window.scrollTo(0, 0);
+      if (text) $('mainContent').scrollTop = 0; // iOS potrafi przewinąć także element z overflow: hidden
+      if (text && !wasText) revealCaret(active);
+      if (open && !text && (!wasOpen || wasText)) active.scrollIntoView({ block: 'center' });
+      wasOpen = open; wasText = text;
     });
   };
   vv.addEventListener('resize', sync);
   vv.addEventListener('scroll', sync);
+  document.addEventListener('focusin', () => {
+    if (!wasOpen) baseH = Math.max(window.innerHeight, vv.height); // klawiatura dopiero się wysunie: to pełna wysokość
+    sync();
+  });
+  document.addEventListener('focusout', sync);
+  window.addEventListener('orientationchange', () => { baseH = window.innerHeight; sync(); });
 }
 
 function hideSplash() {

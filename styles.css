@@ -579,7 +579,7 @@ body.sidebar-collapsed .main-content { left: 0; }
 
 /* ---------- Modal ---------- */
 .modal-backdrop {
-  position: fixed; inset: 0;
+  position: fixed; top: var(--vv-top, 0px); left: 0; right: 0; bottom: var(--kb, 0px);
   background: rgba(0, 0, 0, 0.55);
   display: flex; align-items: center; justify-content: center;
   padding: 16px;
@@ -628,7 +628,7 @@ body.sidebar-collapsed .main-content { left: 0; }
 /* ---------- Toast ---------- */
 .toast {
   position: fixed;
-  bottom: calc(24px + env(safe-area-inset-bottom)); left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom) + var(--kb, 0px)); left: 50%;
   transform: translateX(-50%) translateY(100px);
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -746,3 +746,30 @@ body.light .tok-k { color: #8250df; } body.light .tok-s { color: #0a7a3d; } body
   .editor-sticky { position: static; }
   .notes-header h1 { font-size: 1.3rem; }
 }
+
+/* ---------- Kopia zapasowa ---------- */
+.backup-banner {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 14px; margin-bottom: 14px;
+  background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px;
+  font-size: 0.9rem;
+}
+.backup-banner span { flex: 1; min-width: 150px; }
+.backup-banner .modal-btn { padding: 8px 14px; font-size: 0.85rem; }
+.backup-info { width: 100%; padding: 0 6px 4px; font-size: 0.75rem; color: var(--text-muted); }
+
+/* ---------- Otwarta klawiatura ---------- */
+html.kb-open .scroll-spacer { display: none; } /* przy klawiaturze dokument nie może się przewijać */
+
+/* pisanie w treści: tytuł i pasek formatowania zostają na miejscu, a tekst przewija się wewnątrz pola */
+html.kb-text .app-header { display: none; }
+html.kb-text .main-content {
+  top: calc(var(--vv-top, 0px) + env(safe-area-inset-top));
+  overflow: hidden;
+  padding-bottom: 6px;
+}
+html.kb-text .editor-view { height: 100%; min-height: 0; }
+html.kb-text .editor-sticky { position: static; }
+html.kb-text .editor-body { min-height: 0; }
+html.kb-text .content-input { min-height: 0; height: 100%; }
+html.kb-text .word-count, html.kb-text .editor-meta { display: none; }

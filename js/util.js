@@ -82,3 +82,35 @@ export function deriveQuickNote(raw) {
   if (title.length > 60) title = title.slice(0, 59).trimEnd() + '…';
   return { title, content: text };
 }
+
+/**
+ * Stan klawiatury ekranowej na podstawie visualViewport.
+ * Klawiaturę poznajemy po zmniejszeniu widocznego obszaru (baseH − vvH). Przesunięcia offsetTop NIE wolno
+ * tu odejmować: iOS przesuwa widok w górę o tyle, ile trzeba odsłonić kursor, i po odjęciu otwarta klawiatura
+ * wyglądała jak zamknięta, a cały interfejs odjeżdżał za górną krawędź.
+ */
+export function keyboardMetrics(baseH, vvH, offsetTop) {
+  const hidden = baseH - vvH;
+  const top = Math.max(0, offsetTop);
+  if (hidden <= 120) return { open: false, kb: 0, top: 0 }; // drobne różnice (pasek adresu itp.)
+  return { open: true, kb: Math.max(0, hidden - top), top };
+}
+
+export const BACKUP_EVERY_DAYS = 7;
+const DAY = 86400000;
+
+/** Czy przypomnieć o kopii: są zmiany od ostatniej kopii i minęło co najmniej `days` dni. */
+export function backupDue({ lastBackup = 0, snoozeUntil = 0, notes = [], now = Date.now(), days = BACKUP_EVERY_DAYS } = {}) {
+  if (!notes.length || now < snoozeUntil) return false;
+  if (!notes.some((n) => n.updated > lastBackup)) return false;
+  const since = lastBackup || Math.min(...notes.map((n) => n.created));
+  return now - since >= days * DAY;
+}
+
+export function backupAge(lastBackup, now = Date.now()) {
+  if (!lastBackup) return 'nigdy';
+  const days = Math.floor((now - lastBackup) / DAY);
+  if (days <= 0) return 'dzisiaj';
+  if (days === 1) return 'wczoraj';
+  return `${days} dni temu`;
+}

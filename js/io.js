@@ -1,10 +1,32 @@
 // Eksport / import kopii zapasowej (JSON z załącznikami zakodowanymi base64).
 import { state, hooks } from './state.js';
-import { askConfirm, showToast } from './ui.js';
-import { plural, todayStr, generateId } from './util.js';
+import { $, askConfirm, showToast } from './ui.js';
+import { plural, todayStr, generateId, backupDue, backupAge } from './util.js';
 import { normalizeNote, putNote, putBlob, getBlobRecord, blobToDataURL, dataURLToBlob, loadNotes } from './db.js';
 import { saveFolders, saveWorkspaces } from './sidebar.js';
-import { writeLS, LS } from './storage.js';
+import { readLS, writeLS, LS } from './storage.js';
+
+const SNOOZE_DAYS = 3;
+const backupInfo = () => { const b = readLS(LS.backup, {}); return b && typeof b === 'object' ? b : {}; };
+
+/** Odświeża przypomnienie nad listą i datę ostatniej kopii w panelu bocznym. */
+export function renderBackup() {
+  const { last = 0, snooze = 0 } = backupInfo();
+  $('backupInfo').textContent = 'Ostatnia kopia: ' + backupAge(last);
+  const due = backupDue({ lastBackup: last, snoozeUntil: snooze, notes: state.notes });
+  $('backupBanner').style.display = due ? '' : 'none';
+  if (due) $('backupText').textContent = last ? `Ostatnia kopia: ${backupAge(last)}. Masz nowe zmiany.` : 'Nie masz jeszcze kopii swoich notatek.';
+}
+
+export function snoozeBackup() {
+  writeLS(LS.backup, { ...backupInfo(), snooze: Date.now() + SNOOZE_DAYS * 86400000 });
+  renderBackup();
+}
+
+function markBackupDone() {
+  writeLS(LS.backup, { last: Date.now(), snooze: 0 });
+  renderBackup();
+}
 
 export async function buildBackup() {
   const notes = [];
@@ -28,6 +50,7 @@ export async function exportData() {
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title: 'Kopia zapasowa Nexus' });
+      markBackupDone();
       showToast('Wyeksportowano');
       return;
     }
@@ -40,6 +63,7 @@ export async function exportData() {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  markBackupDone();
   showToast('Wyeksportowano');
 }
 

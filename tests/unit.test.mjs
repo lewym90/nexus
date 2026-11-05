@@ -43,6 +43,32 @@ test('todayStr / formatDate', () => {
   assert.equal(U.formatDate(0), '');
 });
 
+test('keyboardMetrics: otwarta klawiatura także przy przesunięciu widoku', () => {
+  assert.deepEqual(U.keyboardMetrics(932, 932, 0), { open: false, kb: 0, top: 0 });
+  assert.deepEqual(U.keyboardMetrics(932, 900, 0), { open: false, kb: 0, top: 0 });
+  assert.deepEqual(U.keyboardMetrics(932, 596, 0), { open: true, kb: 336, top: 0 });
+  assert.deepEqual(U.keyboardMetrics(932, 596, 336), { open: true, kb: 0, top: 336 }); // pełne przesunięcie – przed poprawką: „zamknięta”
+  assert.deepEqual(U.keyboardMetrics(932, 596, 100), { open: true, kb: 236, top: 100 });
+});
+
+test('backupDue: przypomina tylko o niezabezpieczonych zmianach', () => {
+  const day = 86400000, now = 100 * day;
+  const old = { created: 80 * day, updated: 80 * day };
+  assert.equal(U.backupDue({ notes: [], now }), false);
+  assert.equal(U.backupDue({ notes: [{ created: now - day, updated: now - day }], now }), false); // świeża baza
+  assert.equal(U.backupDue({ notes: [old], now }), true); // brak kopii od 20 dni
+  assert.equal(U.backupDue({ notes: [old], lastBackup: 90 * day, now }), false); // nic się nie zmieniło
+  assert.equal(U.backupDue({ notes: [{ created: 1, updated: 96 * day }], lastBackup: 95 * day, now }), false); // za wcześnie
+  assert.equal(U.backupDue({ notes: [{ created: 1, updated: 95 * day }], lastBackup: 92 * day, now, days: 7 }), true);
+  assert.equal(U.backupDue({ notes: [old], snoozeUntil: now + 1, now }), false);
+});
+
+test('backupAge', () => {
+  const day = 86400000;
+  assert.deepEqual([0, 10 * day, 10 * day - day].map((x) => U.backupAge(x, 10.5 * day)), ['nigdy', 'dzisiaj', 'wczoraj']);
+  assert.equal(U.backupAge(day, 10.5 * day), '9 dni temu');
+});
+
 /* ---------- markdown ---------- */
 test('markdown never lets raw HTML through', () => {
   const html = renderMarkdown('<img src=x onerror=alert(1)> **b** [x](javascript:alert(1)) [ok](https://a.pl)');

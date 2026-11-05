@@ -26,6 +26,7 @@ Aplikacja do notatek działająca w całości w przeglądarce (PWA). Bez konta, 
 **Dane**
 - Załączniki-obrazy zapisywane jako **Blob w IndexedDB** (automatycznie zmniejszane do 1600 px); stare notatki z base64 są migrowane przy starcie
 - Eksport / import kopii JSON (z obrazami; import scala dane), działa offline, autozapis
+- **Przypomnienie o kopii**: gdy od 7 dni są niezabezpieczone zmiany, nad listą pojawia się baner „Zrób kopię” (jedno dotknięcie, „Później” odkłada o 3 dni); data ostatniej kopii jest w panelu bocznym
 
 ## Uruchomienie / publikacja (GitHub Pages)
 
@@ -65,6 +66,6 @@ pip install playwright && playwright install chromium
 npm run test:e2e             # E2E: widok mobilny i desktop, serwowane spod /nexus/ jak GitHub Pages
 ```
 
-`tests/audit.py` sprawdza układ w 5 rozmiarach ekranu (iPhone, SE, poziomo, iPad, desktop): wypełnienie całego ekranu, brak przepełnień, przyklejony nagłówek edytora.
+`tests/keyboard.py` symuluje klawiaturę iOS (w tym przesunięcie widoku). `tests/audit.py` sprawdza układ w 5 rozmiarach ekranu (iPhone, SE, poziomo, iPad, desktop): wypełnienie całego ekranu, brak przepełnień, przyklejony nagłówek edytora.
 
 Testy uruchamiają się też automatycznie w **GitHub Actions** (`.github/workflows/ci.yml`) po każdym pushu i pull requeście.

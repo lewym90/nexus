@@ -1,5 +1,5 @@
 // Service worker Nexus – działa pod dowolną ścieżką (np. GitHub Pages: /nexus/)
-const CACHE_NAME = 'nexus-v4';
+const CACHE_NAME = 'nexus-v5';
 const ASSETS = [
   './',
   'index.html',
