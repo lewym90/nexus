@@ -782,3 +782,15 @@ html.kb-text .word-count, html.kb-text .editor-meta { display: none; }
 .sync-panel .modal-btn { width: 100%; }
 .sync-panel select { width: 100%; max-width: none; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
 .sync-code { overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; -webkit-user-select: text; user-select: text; }
+
+/* ---------- Notatki prywatne ---------- */
+#accessSeg .view-btn { padding: 8px 12px; }
+.private-tag { color: var(--gold); border-color: var(--gold); }
+@media (max-width: 600px) {
+  .editor-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .save-status { order: -1; }
+}
+@media (max-width: 360px) {
+  #accessSeg .view-btn { padding: 8px 8px; font-size: 0.78rem; }
+  .editor-actions .icon-btn { width: 36px; }
+}

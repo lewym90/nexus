@@ -15,9 +15,10 @@ export function renderBackup() {
   const { last = 0, snooze = 0 } = backupInfo();
   const sync = readLS(LS.sync, null);
   $('backupInfo').textContent = sync ? syncLine(sync) : 'Ostatnia kopia: ' + backupAge(last);
-  const due = !sync && backupDue({ lastBackup: last, snoozeUntil: snooze, notes: state.notes }); // kopie robi wtedy serwer
+  // Po połączeniu kopie robi serwer, ale prywatne notatki tam nie trafiają: przypomnienie dotyczy tylko ich.
+  const due = backupDue({ lastBackup: last, snoozeUntil: snooze, notes: sync ? state.notes.filter((n) => n.private) : state.notes });
   $('backupBanner').style.display = due ? '' : 'none';
-  if (due) $('backupText').textContent = last ? `Ostatnia kopia: ${backupAge(last)}. Masz nowe zmiany.` : 'Nie masz jeszcze kopii swoich notatek.';
+  if (due) $('backupText').textContent = sync ? 'Prywatne notatki nie są na serwerze. Zrób ich kopię.' : last ? `Ostatnia kopia: ${backupAge(last)}. Masz nowe zmiany.` : 'Nie masz jeszcze kopii swoich notatek.';
 }
 
 export function snoozeBackup() {

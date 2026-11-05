@@ -79,6 +79,7 @@ export function renderNotes() {
       <p>${escapeHtml(plainPreview(note.content)) || '&nbsp;'}</p>
       <div class="note-meta">
         <div class="note-tags">
+          ${note.private ? '<span class="mini-tag private-tag" title="Tylko na tym urządzeniu">🔒 Prywatna</span>' : ''}
           ${note.favorite ? '<span class="fav-star" title="Ulubiona">★</span>' : ''}
           ${note.attachments.length ? `<span class="mini-tag" title="Załączniki">📎${note.attachments.length}</span>` : ''}
           ${note.tags.slice(0, 3).map((t) => `<span class="mini-tag">#${escapeHtml(t)}</span>`).join('')}

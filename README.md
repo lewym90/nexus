@@ -33,6 +33,7 @@ Aplikacja do notatek działająca w przeglądarce (PWA). Bez konta i bez śledze
 - Szyfrowanie AES-GCM na urządzeniu: serwer widzi tylko zaszyfrowane bajty i nie zna kodu
 - Ta sama notatka zmieniona na dwóch urządzeniach: wygrywa nowsza, druga zostaje jako kopia „(konflikt)”
 - Serwer robi kopię raz na dobę i trzyma ją 30 dni; przywracanie w oknie *Synchronizacja*
+- Domyślnie notatka jest na wszystkich urządzeniach. Kłódka w edytorze albo *Dostęp: Tylko to urządzenie* czyni ją prywatną, także istniejącą: znika z serwera i innych urządzeń, zostaje tylko tu i nie ma jej w kolejnych kopiach serwera. Dla takich notatek zostaje przypomnienie o eksporcie
 
 Instalacja na serwerze (Ubuntu z Caddy, trasy w `/etc/caddy/conf.d`):
 

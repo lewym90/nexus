@@ -103,6 +103,10 @@ async function pull(cfg, client, key) {
     if (state.editing) return changed; // użytkownik otworzył notatkę: dokończymy po wyjściu z edytora
     const cur = map[e.k];
     if (cur && e.v <= cur.v) continue; // własna zmiana albo już znana
+    if (e.k.startsWith('n-') && state.notes.find((n) => n.id === decodeKey(e.k))?.private) { // prywatnej nic nie nadpisuje ani nie usuwa
+      map[e.k] = { d: 1, v: e.v };
+      continue;
+    }
     if (e.d) {
       if (e.k.startsWith('n-')) {
         const id = decodeKey(e.k), local = state.notes.find((n) => n.id === id);
@@ -128,8 +132,9 @@ async function push(cfg, client, key) {
   const map = cfg.map, now = Date.now();
   const versionFor = (k, fallback) => (map[k] ? Math.max(now, map[k].v + 1) : fallback); // nowy element zachowuje własną datę
   const referenced = new Set();
-  const notes = [...state.notes];
-  if (state.editing) state.editing.note.attachments.forEach((a) => a.id && referenced.add(a.id));
+  const notes = state.notes.filter((n) => !n.private); // prywatne nie wychodzą z urządzenia, a wcześniej wysłane znikają z serwera
+  const editing = state.editing && !state.editing.note.private ? state.editing.note : null;
+  if (editing) editing.attachments.forEach((a) => a.id && referenced.add(a.id));
 
   for (const n of notes) {
     for (const a of n.attachments) {
@@ -157,7 +162,7 @@ async function push(cfg, client, key) {
   }
 
   const alive = new Set(notes.map((n) => n.id));
-  if (state.editing) alive.add(state.editing.note.id);
+  if (editing) alive.add(editing.id);
   for (const [k, e] of Object.entries(map)) {
     if (e.d) continue;
     const gone = k.startsWith('n-') ? !alive.has(decodeKey(k)) : k.startsWith('b-') ? !referenced.has(decodeKey(k)) : false;
@@ -243,7 +248,8 @@ export async function restoreBackup(day) {
   const { items } = await client.json(`/backups/${day}/index`);
   const now = Date.now();
   let restored = 0;
-  for (const e of items.filter((x) => x.k.startsWith('b-'))) {
+  const privateBlobs = new Set(state.notes.filter((n) => n.private).flatMap((n) => n.attachments.map((a) => a.id)));
+  for (const e of items.filter((x) => x.k.startsWith('b-') && !privateBlobs.has(decodeKey(x.k)))) {
     const rec = JSON.parse(await open(key, await client.bytes(`/backups/${day}/item/${e.k}`)));
     await putBlob({ ...rec, id: decodeKey(e.k), blob: dataURLToBlob(rec.data), data: undefined });
     cfg.map[e.k] = { d: 1, v: cfg.map[e.k]?.v || 0 }; // wymusza ponowne wysłanie obrazu
@@ -252,6 +258,7 @@ export async function restoreBackup(day) {
     const plain = await open(key, await client.bytes(`/backups/${day}/item/${e.k}`));
     if (e.k.startsWith('n-')) {
       const note = normalizeNote(JSON.parse(plain));
+      if (state.notes.find((n) => n.id === note.id)?.private) continue; // prywatna nie wraca na serwer przez kopię
       await putNote(note);
       storeNoteInState(note);
       cfg.map[e.k] = { sig: '', v: Math.max(now, cfg.map[e.k]?.v || 0) };

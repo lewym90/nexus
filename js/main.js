@@ -14,11 +14,11 @@ import {
 import {
   registerEditorHooks, startNewNote, openNote, leaveEditor, saveCurrentNote, deleteCurrentNote, restoreCurrentNote, toggleArchiveCurrent,
   toggleFlag, togglePreview, onPreviewClick, setupTaskDrag, scheduleSave, onContentChanged, applyMarkdown, handleEditorKeys,
-  addAttachments, showAttachment, openBacklink, setAuraFromUI, revealCaret
+  addAttachments, showAttachment, openBacklink, setAuraFromUI, revealCaret, setNotePrivate
 } from './editor.js';
 import { loadTemplates, openTemplatePicker, saveAsTemplate, applyTemplateVars } from './templates.js';
 import { exportData, importData, renderBackup, snoozeBackup } from './io.js';
-import { initSync, scheduleSync } from './sync.js';
+import { initSync, isPaired } from './sync.js';
 import { openSyncPanel } from './syncui.js';
 import { initGraph, rebuildGraph, drawGraph, getGraph } from './graph.js';
 import { emptyTrash, purgeExpired, purgeNote, createQuickNote, createNoteFrom } from './actions.js';
@@ -64,7 +64,7 @@ function renderAll() {
   renderBackup();
 }
 
-Object.assign(hooks, { syncStatus: renderBackup, renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
+Object.assign(hooks, { isPaired, syncStatus: renderBackup, renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
 registerEditorHooks();
 
 /* ---------- Nowe notatki ---------- */
@@ -162,6 +162,8 @@ function setupEventListeners() {
   $('purgeBtn').addEventListener('click', deleteCurrentNote);
   $('favoriteBtn').addEventListener('click', () => toggleFlag('favorite'));
   $('pinBtn').addEventListener('click', () => toggleFlag('pinned'));
+  $('privateBtn').addEventListener('click', () => setNotePrivate(!state.editing?.note.private));
+  $('accessSeg').addEventListener('click', (e) => { const b = e.target.closest('[data-private]'); if (b) setNotePrivate(b.dataset.private === '1'); });
   $('previewToggle').addEventListener('click', () => { state.isPreview = !state.isPreview; togglePreview(); });
   $('markdownPreview').addEventListener('click', onPreviewClick);
   document.querySelectorAll('.aura-dot').forEach((dot) => dot.addEventListener('click', () => setAuraFromUI(dot.dataset.color)));

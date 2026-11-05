@@ -87,6 +87,12 @@ test('encodeKey / decodeKey i hashText', () => {
   assert.notEqual(U.hashText('abc'), U.hashText('abd'));
 });
 
+test('backupDue dla samych prywatnych notatek', () => {
+  const day = 86400000, now = 100 * day;
+  assert.equal(U.backupDue({ notes: [], lastBackup: 0, now }), false); // brak prywatnych: serwer wystarcza
+  assert.equal(U.backupDue({ notes: [{ created: 50 * day, updated: 50 * day, private: true }], now }), true);
+});
+
 /* ---------- markdown ---------- */
 test('markdown never lets raw HTML through', () => {
   const html = renderMarkdown('<img src=x onerror=alert(1)> **b** [x](javascript:alert(1)) [ok](https://a.pl)');
