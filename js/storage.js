@@ -6,7 +6,8 @@ export const LS = {
   folders: 'nexus-folders',
   workspaces: 'nexus-workspaces',
   templates: 'nexus-templates',
-  backup: 'nexus-backup'
+  backup: 'nexus-backup',
+  sync: 'nexus-sync'
 };
 
 export function readLS(key, fallback) {

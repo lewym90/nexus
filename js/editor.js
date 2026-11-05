@@ -323,6 +323,7 @@ export async function leaveEditor() {
   if (!state.editing) return;
   await saveCurrentNote();
   state.editing = null;
+  if (hooks.dataChanged) hooks.dataChanged(); // pobieranie czekało na wyjście z edytora
 }
 
 /* ---------- Kosz / archiwum / flagi ---------- */

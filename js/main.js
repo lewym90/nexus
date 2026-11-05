@@ -18,6 +18,8 @@ import {
 } from './editor.js';
 import { loadTemplates, openTemplatePicker, saveAsTemplate, applyTemplateVars } from './templates.js';
 import { exportData, importData, renderBackup, snoozeBackup } from './io.js';
+import { initSync, scheduleSync } from './sync.js';
+import { openSyncPanel } from './syncui.js';
 import { initGraph, rebuildGraph, drawGraph, getGraph } from './graph.js';
 import { emptyTrash, purgeExpired, purgeNote, createQuickNote, createNoteFrom } from './actions.js';
 
@@ -62,7 +64,7 @@ function renderAll() {
   renderBackup();
 }
 
-Object.assign(hooks, { renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
+Object.assign(hooks, { syncStatus: renderBackup, renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
 registerEditorHooks();
 
 /* ---------- Nowe notatki ---------- */
@@ -260,6 +262,7 @@ function setupEventListeners() {
   $('exportBtn').addEventListener('click', exportData);
   $('backupNowBtn').addEventListener('click', exportData);
   $('backupLaterBtn').addEventListener('click', snoozeBackup);
+  $('syncBtn').addEventListener('click', () => { closeSidebar(); openSyncPanel(initSync); });
   $('importBtn').addEventListener('click', importData);
 
   // historia przeglądarki / gest „wstecz”
@@ -368,6 +371,7 @@ async function init() {
   if (!state.dbOk) showToast('Pamięć lokalna niedostępna – notatki nie zostaną zachowane (tryb prywatny?)');
   if (state.dbOk && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   await handleLaunchParams();
+  initSync();
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     const hadController = !!navigator.serviceWorker.controller;

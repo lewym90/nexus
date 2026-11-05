@@ -39,5 +39,8 @@ jobs:
       - name: Klawiatura ekranowa (symulacja iOS)
         run: python3 tests/keyboard.py
 
+      - name: Synchronizacja (serwer i dwa urządzenia)
+        run: python3 tests/sync.py
+
       - name: Audyt układu (wiele rozmiarów ekranu)
         run: python3 tests/audit.py

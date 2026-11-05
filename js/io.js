@@ -7,13 +7,15 @@ import { saveFolders, saveWorkspaces } from './sidebar.js';
 import { readLS, writeLS, LS } from './storage.js';
 
 const SNOOZE_DAYS = 3;
+const syncLine = (s) => s.error ? `Synchronizacja: ${s.error}` : s.last ? `Zsynchronizowano: ${new Date(s.last).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}` : 'Synchronizacja: łączenie…';
 const backupInfo = () => { const b = readLS(LS.backup, {}); return b && typeof b === 'object' ? b : {}; };
 
 /** Odświeża przypomnienie nad listą i datę ostatniej kopii w panelu bocznym. */
 export function renderBackup() {
   const { last = 0, snooze = 0 } = backupInfo();
-  $('backupInfo').textContent = 'Ostatnia kopia: ' + backupAge(last);
-  const due = backupDue({ lastBackup: last, snoozeUntil: snooze, notes: state.notes });
+  const sync = readLS(LS.sync, null);
+  $('backupInfo').textContent = sync ? syncLine(sync) : 'Ostatnia kopia: ' + backupAge(last);
+  const due = !sync && backupDue({ lastBackup: last, snoozeUntil: snooze, notes: state.notes }); // kopie robi wtedy serwer
   $('backupBanner').style.display = due ? '' : 'none';
   if (due) $('backupText').textContent = last ? `Ostatnia kopia: ${backupAge(last)}. Masz nowe zmiany.` : 'Nie masz jeszcze kopii swoich notatek.';
 }

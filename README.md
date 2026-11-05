@@ -2,7 +2,7 @@
 
 > Precyzyjne notatki. Prywatne. Lokalne.
 
-Aplikacja do notatek działająca w całości w przeglądarce (PWA). Bez konta, bez serwera, bez śledzenia – dane zostają na Twoim urządzeniu (IndexedDB + localStorage).
+Aplikacja do notatek działająca w przeglądarce (PWA). Bez konta i bez śledzenia. Dane są na urządzeniu (IndexedDB + localStorage), a opcjonalnie synchronizują się przez własny serwer, zaszyfrowane jeszcze na urządzeniu.
 
 ## Funkcje
 
@@ -28,6 +28,20 @@ Aplikacja do notatek działająca w całości w przeglądarce (PWA). Bez konta, 
 - Eksport / import kopii JSON (z obrazami; import scala dane), działa offline, autozapis
 - **Przypomnienie o kopii**: gdy od 7 dni są niezabezpieczone zmiany, nad listą pojawia się baner „Zrób kopię” (jedno dotknięcie, „Później” odkłada o 3 dni); data ostatniej kopii jest w panelu bocznym
 
+**Synchronizacja i kopie na serwerze** (opcjonalne)
+- Zmiany trafiają na własny serwer i na pozostałe urządzenia; działa też offline i nadrabia po powrocie sieci
+- Szyfrowanie AES-GCM na urządzeniu: serwer widzi tylko zaszyfrowane bajty i nie zna kodu
+- Ta sama notatka zmieniona na dwóch urządzeniach: wygrywa nowsza, druga zostaje jako kopia „(konflikt)”
+- Serwer robi kopię raz na dobę i trzyma ją 30 dni; przywracanie w oknie *Synchronizacja*
+
+Instalacja na serwerze (Ubuntu z Caddy, trasy w `/etc/caddy/conf.d`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lewym90/nexus/main/server/install.sh | sudo bash
+```
+
+Na końcu skrypt wypisuje kod. Wklej go w *Menu → Synchronizacja* na każdym urządzeniu i zapisz w menedżerze haseł: kodu nie da się odzyskać, a bez niego dane z serwera są nie do odczytania.
+
 ## Uruchomienie / publikacja (GitHub Pages)
 
 1. Repozytorium → **Settings → Pages**
@@ -51,6 +65,8 @@ Otwórz adres w Safari → **Udostępnij** → **Do ekranu początkowego**.
 | `js/editor.js` | edytor, autozapis, załączniki, przeciąganie zadań |
 | `js/list.js`, `js/sidebar.js`, `js/templates.js` | lista notatek, panel boczny, szablony |
 | `js/actions.js` | kosz, archiwum, szybkie notatki |
+| `js/sync.js`, `js/syncui.js` | synchronizacja z serwerem, szyfrowanie, okno ustawień |
+| `server/` | serwer synchronizacji (Node, bez zależności) i instalator |
 | `js/db.js` | IndexedDB (notatki + Blob-y), migracje |
 | `js/markdown.js`, `js/graph.js`, `js/util.js` | renderer Markdown, graf, funkcje pomocnicze (testowane jednostkowo) |
 | `js/io.js`, `js/nav.js`, `js/ui.js`, `js/state.js`, `js/storage.js` | eksport/import, nawigacja, okna/toasty, stan, localStorage |

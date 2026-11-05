@@ -69,6 +69,24 @@ test('backupAge', () => {
   assert.equal(U.backupAge(day, 10.5 * day), '9 dni temu');
 });
 
+test('parseSyncCode', () => {
+  const s = 'ab'.repeat(32);
+  assert.deepEqual(U.parseSyncCode(` https://1-2-3-4.sslip.io/nexus-sync#${s}\n`), { url: 'https://1-2-3-4.sslip.io/nexus-sync', secret: s });
+  assert.equal(U.parseSyncCode('https://a.pl/x'), null);
+  assert.equal(U.parseSyncCode('https://a.pl/x#krotki'), null);
+  assert.equal(U.parseSyncCode(''), null);
+});
+
+test('encodeKey / decodeKey i hashText', () => {
+  for (const id of ['legacy1', 'mh2x9a1b2', 'zażółć/../gęś']) {
+    const k = U.encodeKey('n-', id);
+    assert.match(k, /^n-[0-9a-f]+$/);
+    assert.equal(U.decodeKey(k), id);
+  }
+  assert.equal(U.hashText('abc'), U.hashText('abc'));
+  assert.notEqual(U.hashText('abc'), U.hashText('abd'));
+});
+
 /* ---------- markdown ---------- */
 test('markdown never lets raw HTML through', () => {
   const html = renderMarkdown('<img src=x onerror=alert(1)> **b** [x](javascript:alert(1)) [ok](https://a.pl)');
