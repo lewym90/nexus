@@ -12,7 +12,8 @@ export const state = {
   workspaces: [],
   templates: [],
   editing: null, // { note, isNew }
-  currentScreen: 'notes', // notes | graph | editor
+  currentScreen: 'notes', // home | notes | tasks | graph | editor
+  tasksShowDone: false,
   currentView: 'all', // all | recent | favorites | journal | archive | trash
   currentLayout: 'grid',
   currentSort: 'updated',

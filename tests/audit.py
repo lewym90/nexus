@@ -2,6 +2,8 @@
 Opcjonalnie: CHROMIUM_PATH, SHOTS=katalog (zapis zrzutów ekranu)."""
 import sys, threading, http.server, os, urllib.parse
 from playwright.sync_api import sync_playwright
+import start_notes  # noqa: F401  (start od listy notatek)
+GO = '''t => { const el = [...document.querySelectorAll(`[data-go=${t}]`)].find((e) => { const r = e.getBoundingClientRect(); return r.width && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; }); el.click(); }'''
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS = os.environ.get('SHOTS')
 
@@ -86,15 +88,15 @@ def run(name, W, H, touch):
         pg.wait_for_timeout(500); check(K + 'list: no overflow', not overflow(pg), overflow(pg)); shot(pg, f'{name}_list')
         title_clip = pg.evaluate('[...document.querySelectorAll(".note-card h3")].some(h => h.scrollWidth > h.clientWidth + 1)')
         check(K + 'card titles wrap (no clipping)', not title_clip)
-        pg.click('.view-btn[data-layout=list]'); pg.wait_for_timeout(100); check(K + 'list layout: no overflow', not overflow(pg), overflow(pg)); pg.click('.view-btn[data-layout=grid]')
-        if mobile:
+        if W < 1100: pg.click('.view-btn[data-layout=list]'); pg.wait_for_timeout(100); check(K + 'list layout: no overflow', not overflow(pg), overflow(pg)); pg.click('.view-btn[data-layout=grid]')
+        if mobile and W < 768:
             pg.click('#menuToggle'); pg.wait_for_timeout(450)
             check(K + 'sidebar: no overflow', not overflow(pg), overflow(pg)); shot(pg, f'{name}_sidebar')
             sb = pg.evaluate('(() => { const r = document.querySelector(".sidebar").getBoundingClientRect(); return [r.top, r.bottom, innerHeight] })()')
             check(K + 'sidebar reaches bottom edge', abs(sb[1] - sb[2]) < 1, sb)
             pg.click('#sidebarBackdrop', position={'x': W - 6, 'y': H // 2}); pg.wait_for_timeout(450)
         # graf
-        pg.click('#graphBtn'); pg.wait_for_selector('#graphView.active'); pg.wait_for_timeout(300)
+        pg.evaluate(GO,'graph'); pg.wait_for_selector('#graphView.active'); pg.wait_for_timeout(300)
         g = pg.evaluate('''() => { const c = document.getElementById('graphCanvas').getBoundingClientRect(), m = document.querySelector('.main-content').getBoundingClientRect(); return { cb: c.bottom, mb: m.bottom, h: c.height } }''')
         check(K + 'graph canvas fits inside screen', g['cb'] <= g['mb'] + 1 and g['h'] > 150, g); check(K + 'graph: no overflow', not overflow(pg), overflow(pg)); shot(pg, f'{name}_graph')
         pg.click('#closeGraphBtn'); pg.wait_for_selector('#notesView.active')
@@ -107,7 +109,7 @@ def run(name, W, H, touch):
             pg.wait_for_selector('.modal'); r = pg.evaluate('(() => { const r = document.querySelector(".modal").getBoundingClientRect(); return [r.left, r.right, r.top, r.bottom, innerWidth, innerHeight] })()')
             check(K + 'modal inside viewport', r[0] >= 0 and r[1] <= r[4] and r[2] >= 0 and r[3] <= r[5], r); pg.keyboard.press('Escape')
         # jasny motyw
-        pg.click('#themeToggle'); pg.wait_for_selector('.theme-choice'); pg.click('.theme-choice [data-theme=light]'); pg.wait_for_timeout(150); shot(pg, f'{name}_light'); check(K + 'light theme: no overflow', not overflow(pg), overflow(pg))
+        pg.evaluate("document.querySelector('[data-act=theme]').click()"); pg.wait_for_selector('.theme-choice'); pg.click('.theme-choice [data-theme=light]'); pg.wait_for_timeout(150); shot(pg, f'{name}_light'); check(K + 'light theme: no overflow', not overflow(pg), overflow(pg))
         errs_f = [e for e in errs if 'PAGEERR' in e or 'CONSOLE' in e or 'REQFAIL' in e or 'HTTP 4' in e or 'HTTP 5' in e]
         check(K + 'no console/page/network errors', not errs_f, errs_f)
         b.close()

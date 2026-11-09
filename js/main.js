@@ -1,5 +1,5 @@
 // Punkt wejścia: inicjalizacja, spinanie zdarzeń, parametry uruchomienia (skróty / udostępnianie).
-import { state, hooks } from './state.js';
+import { state, hooks, wsNotes, isLive } from './state.js';
 import { $, isMobile, showToast, closeModal, isModalOpen, askConfirm, openModal } from './ui.js';
 import { readLS, LS } from './storage.js';
 import { initDB, loadNotes, migrateLegacyAttachments, revokeAllBlobURLs } from './db.js';
@@ -20,6 +20,8 @@ import { loadTemplates, openTemplatePicker, saveAsTemplate, applyTemplateVars } 
 import { exportData, importData, renderBackup, snoozeBackup } from './io.js';
 import { initSync, isPaired } from './sync.js';
 import { openSyncPanel } from './syncui.js';
+import { renderHome, renderTasks, setupHomeInteractions, collectTasks } from './home.js';
+
 import { initGraph, rebuildGraph, drawGraph, getGraph } from './graph.js';
 import { emptyTrash, purgeExpired, purgeNote, createQuickNote, createNoteFrom } from './actions.js';
 
@@ -101,9 +103,35 @@ function renderAll() {
   updateFolderSelect();
   renderNotes();
   renderBackup();
+  renderNavCounts();
+  if (state.currentScreen === 'home') renderHome();
+  if (state.currentScreen === 'tasks') renderTasks();
 }
 
-Object.assign(hooks, { isPaired, syncStatus: renderBackup, renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
+function renderNavCounts() {
+  const live = wsNotes().filter(isLive);
+  const counts = {
+    all: live.length,
+    recent: Math.min(live.length, 30),
+    favorites: live.filter((n) => n.favorite).length,
+    journal: live.filter((n) => n.tags.some((t) => t.toLowerCase() === 'dziennik') || n.title.toLowerCase().includes('dziennik')).length,
+    archive: wsNotes().filter((n) => n.archived && !n.deleted).length,
+    tasks: collectTasks(live).filter((t) => !t.done).length
+  };
+  document.querySelectorAll('[data-count]').forEach((el) => { const c = counts[el.dataset.count]; el.textContent = c ? String(c) : ''; });
+}
+
+/** Ikonka chmury w nagłówku: zielona = zsynchronizowano, czerwona = problem, szara = brak serwera. */
+function updateSyncStatus() {
+  renderBackup();
+  const sync = readLS(LS.sync, null);
+  const dot = $('syncDot');
+  dot.className = 'status-dot ' + (!sync ? 'off' : sync.error ? 'err' : 'ok');
+  $('syncStatusBtn').title = !sync ? 'Synchronizacja wyłączona' : sync.error ? 'Synchronizacja: ' + sync.error : 'Zsynchronizowano';
+  if (state.currentScreen === 'home') renderHome();
+}
+
+Object.assign(hooks, { isPaired, syncStatus: updateSyncStatus, switchWorkspace, renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
 registerEditorHooks();
 
 /* ---------- Nowe notatki ---------- */
@@ -134,6 +162,31 @@ async function pasteFromClipboard() {
   } catch {
     showToast('Brak dostępu do schowka – wklej tekst w polu szybkiej notatki');
     $('quickInput').focus();
+  }
+}
+
+async function showScreen(screen, render) {
+  closeSidebar();
+  if (state.currentScreen === screen) { render(); return; }
+  if (state.currentScreen === 'editor') await leaveEditor();
+  pushScreen(screen);
+  setView(screen);
+  render();
+}
+const showHome = () => showScreen('home', () => { renderNavCounts(); renderHome(); });
+const showTasks = () => showScreen('tasks', renderTasks);
+
+/** Przyciski z data-go: dolny pasek, kafelki Pulpitu, menu boczne. */
+async function go(target) {
+  if (target === 'home') return showHome();
+  if (target === 'tasks') return showTasks();
+  if (target === 'graph') return showGraph();
+  if (target === 'more') return toggleSidebar();
+  if (target === 'notes' || target === 'search') {
+    closeSidebar();
+    if (target === 'notes') { setNavView('all'); state.currentFolder = null; state.currentTag = null; }
+    if (state.currentScreen !== 'notes') { pushScreen('notes'); await showNotes(); } else renderAll();
+    if (target === 'search') (isMobile() ? $('searchInputMobile') : $('searchInput')).focus();
   }
 }
 
@@ -232,15 +285,24 @@ function setupEventListeners() {
   $('searchInputMobile').addEventListener('input', onSearch);
 
   // nawigacja boczna
-  document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click', async () => {
+  document.querySelectorAll('.nav-item[data-view]').forEach((item) => item.addEventListener('click', async () => {
     setNavView(item.dataset.view);
     state.currentFolder = null;
     state.currentTag = null;
     state.animateNext = true;
     closeSidebar();
-    if (state.currentScreen !== 'notes') await showNotes();
+    if (state.currentScreen !== 'notes') { pushScreen('notes'); await showNotes(); }
     renderAll();
   }));
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-go]');
+    if (t) { e.preventDefault(); go(t.dataset.go); return; }
+    if (e.target.closest('[data-act="theme"]')) { closeSidebar(); chooseTheme(); }
+  });
+  $('tileNew').addEventListener('click', async () => { setNavView('all'); await onNewNote(); });
+  $('tileJournal').addEventListener('click', async () => { setNavView('journal'); await onNewNote(); });
+  $('syncStatusBtn').addEventListener('click', () => openSyncPanel(initSync));
+  setupHomeInteractions();
   $('emptyTrashBtn').addEventListener('click', emptyTrash);
 
   $('foldersList').addEventListener('click', async (e) => {
@@ -291,9 +353,7 @@ function setupEventListeners() {
 
   $('menuToggle').addEventListener('click', toggleSidebar);
   $('sidebarBackdrop').addEventListener('click', closeSidebar);
-  $('themeToggle').addEventListener('click', chooseTheme);
 
-  $('graphBtn').addEventListener('click', showGraph);
   $('closeGraphBtn').addEventListener('click', goBack);
   $('exportBtn').addEventListener('click', exportData);
   $('backupNowBtn').addEventListener('click', exportData);
@@ -308,6 +368,7 @@ function setupEventListeners() {
     if (state.currentScreen === 'editor') await leaveEditor();
     if (screen === 'editor') screen = 'notes';
     if (screen === 'graph') { setView('graph'); rebuildGraph(''); }
+    else if (screen === 'home' || screen === 'tasks') { setView(screen); renderAll(); }
     else { setView('notes'); renderAll(); }
   });
 
@@ -405,8 +466,12 @@ async function init() {
   try { await migrateLegacyAttachments(state.notes); } catch (e) { console.error('Migracja załączników:', e); }
   try { await purgeExpired(); } catch (e) { console.error(e); }
   setupEventListeners();
-  try { history.replaceState(null, ''); } catch { /* ignoruj */ }
+  // Start: Pulpit (testy i ustawienie mogą wybrać listę notatek)
+  const start = (() => { try { return localStorage.getItem('nexus-start') === 'notes' ? 'notes' : 'home'; } catch { return 'home'; } })();
+  setView(start);
+  try { history.replaceState({ screen: start }, ''); } catch { /* ignoruj */ }
   renderAll();
+  updateSyncStatus();
   if (!state.dbOk) showToast('Pamięć lokalna niedostępna – notatki nie zostaną zachowane (tryb prywatny?)');
   if (state.dbOk && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   await handleLaunchParams();

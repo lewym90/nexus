@@ -19,7 +19,10 @@ Prywatne notatki PWA po polsku: czysty JS (moduły ES), bez frameworka i builda.
 - Czcionki w `fonts/` (OFL): Inter (treść), Manrope (nagłówki), JetBrains Mono (kod), Michroma (znak słowny NEXUS).
 - Ikona: `icons/` z oryginału użytkownika (N z piórem i zawiniętym rogiem, czarny margines pod zaokrąglenie iOS); zakładka 16/32 px z płaskiego N z orbitą; `brand/logo.webp` na ekranie startowym i w pustych widokach; `brand/og.jpg` w podglądzie linku.
 - Kolory notatek: zapisane wartości bez zmian, wyświetlane stonowane (`AURA_DISPLAY` w `js/state.js`); dawny niebieski = bez koloru.
-- Plan dalej: porcja 2 – układ telefonu (dolny pasek: Pulpit, Notatki, Szukaj, Graf, Więcej), tabletu (2 kolumny), laptopa (3 kolumny); porcja 3 – Pulpit (projekty = przestrzenie poza domyślną), wyszukiwarka, tryb Focus.
+- Układ wg renderów: telefon (<768 px) – dolny pasek Pulpit/Notatki/Szukaj/Graf/Więcej, złoty „+” nad paskiem, nagłówek menu–NEXUS–szukaj; tablet (768–1099) – stałe menu boczne + treść; laptop (≥1100) – trzy kolumny: menu, lista, notatka (`isWide` w `js/editor.js`, CSS na dole `styles.css`).
+- Start na Pulpicie (`js/home.js`): kafelki, ostatnie notatki, zadania, projekty (= przestrzenie poza domyślną), status synchronizacji. Testy starsze startują od listy (`tests/start_notes.py`, klucz `nexus-start`).
+- Zadania: zbierane z linii `- [ ]` wszystkich notatek, odhaczanie zmienia treść notatki.
+- Do zrobienia z ETAP I: wyszukiwarka z filtrami i podświetlaniem, tryb Focus, paleta poleceń, poprawki 4 znanych błędów.
 
 ## Synchronizacja
 - Serwer: `server/index.mjs`, port wybierany przez instalator od 18872 (zapisany w `/etc/nexus-sync.env`), trasa `/nexus-sync/` w `/etc/caddy/conf.d/nexus-sync.caddy`, dane w `/var/lib/nexus-sync`, usługa `nexus-sync`. Nigdy nie nadpisywać Caddyfile.

@@ -72,7 +72,8 @@ export function buildGraphData(notes, tag) {
       a.deg++; b.deg++;
     });
   });
-  nodes.forEach((n) => { n.r = 9 + Math.min(n.deg, 8) * 2; });
+  const maxDeg = Math.max(0, ...nodes.map((n) => n.deg));
+  nodes.forEach((n) => { n.hub = maxDeg > 1 && n.deg === maxDeg; n.r = n.hub ? 40 : 20 + Math.min(n.deg, 5) * 2.5; });
   return { nodes, links };
 }
 
@@ -136,27 +137,66 @@ export function drawGraph() {
     ctx.fillText(g.tag ? 'Brak notatek z tym tagiem' : 'Brak notatek w tej przestrzeni', W / 2, H / 2);
   }
   ctx.setTransform(dpr * view.k, 0, 0, dpr * view.k, dpr * view.x, dpr * view.y);
-  ctx.lineWidth = 1.5 / view.k;
-  ctx.strokeStyle = gold; ctx.globalAlpha = 0.4;
+  // połączenia: złote, ze świeceniem
+  ctx.lineWidth = 1.6 / view.k;
+  ctx.strokeStyle = gold;
+  ctx.shadowColor = gold;
+  ctx.shadowBlur = 10;
+  ctx.globalAlpha = 0.75;
   links.forEach(({ a, b }) => { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); });
   ctx.globalAlpha = 1;
+  const raised = css.getPropertyValue('--bg-raised').trim() || '#1b1f26';
   nodes.forEach((n) => {
+    const ring = auraColor(n.aura) || gold;
+    // poświata
+    if (n.deg) {
+      const glow = ctx.createRadialGradient(n.x, n.y, n.r * 0.6, n.x, n.y, n.r * (n.hub ? 2.2 : 1.7));
+      glow.addColorStop(0, ring + (n.hub ? '66' : '33'));
+      glow.addColorStop(1, ring + '00');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r * (n.hub ? 2.2 : 1.7), 0, Math.PI * 2); ctx.fill();
+    }
+    // tarcza
+    const fill = ctx.createLinearGradient(n.x, n.y - n.r, n.x, n.y + n.r);
+    fill.addColorStop(0, raised);
+    fill.addColorStop(1, surface);
     ctx.beginPath();
     ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-    ctx.fillStyle = surface;
+    ctx.fillStyle = fill;
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 14;
     ctx.fill();
-    ctx.lineWidth = (n.deg ? 3 : 2) / view.k;
-    ctx.strokeStyle = auraColor(n.aura) || gold;
-    ctx.globalAlpha = n.deg ? 1 : 0.6;
-    if (n.deg) { ctx.shadowColor = gold; ctx.shadowBlur = 12; }
+    ctx.shadowBlur = n.deg ? 12 : 0;
+    ctx.shadowColor = ring;
+    ctx.lineWidth = (n.hub ? 3 : 2) / view.k;
+    ctx.strokeStyle = ring;
+    ctx.globalAlpha = n.deg ? 1 : 0.55;
     ctx.stroke();
     ctx.shadowBlur = 0;
+    // ikona notatki
+    const s = n.r * 0.5;
+    ctx.save();
+    ctx.translate(n.x, n.y);
+    ctx.strokeStyle = text;
+    ctx.lineWidth = Math.max(1.4, s * 0.12);
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = n.deg ? 0.95 : 0.6;
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.55, -s * 0.75); ctx.lineTo(s * 0.2, -s * 0.75); ctx.lineTo(s * 0.55, -s * 0.4); ctx.lineTo(s * 0.55, s * 0.75); ctx.lineTo(-s * 0.55, s * 0.75); ctx.closePath();
+    ctx.moveTo(-s * 0.28, -s * 0.05); ctx.lineTo(s * 0.28, -s * 0.05);
+    ctx.moveTo(-s * 0.28, s * 0.3); ctx.lineTo(s * 0.18, s * 0.3);
+    ctx.stroke();
+    ctx.restore();
     ctx.globalAlpha = 1;
-    if (view.k > 0.45) {
-      ctx.fillStyle = text;
-      ctx.font = `${12 / view.k}px ${font}`;
+    if (view.k > 0.4) {
+      const label = n.title.length > 20 ? n.title.slice(0, 19) + '…' : n.title;
+      ctx.font = `${n.hub ? 700 : 600} ${(n.hub ? 13 : 12) / view.k}px ${font}`;
       ctx.textAlign = 'center';
-      ctx.fillText(n.title.length > 18 ? n.title.slice(0, 17) + '…' : n.title, n.x, n.y + n.r + 14 / view.k);
+      ctx.fillStyle = text;
+      ctx.shadowColor = surface; // czytelny napis nawet na linii połączenia
+      ctx.shadowBlur = 6;
+      for (let i = 0; i < 3; i++) ctx.fillText(label, n.x, n.y + n.r + 17 / view.k);
+      ctx.shadowBlur = 0;
     }
   });
   $('graphInfo').textContent = `${nodes.length} ${plural(nodes.length, 'notatka', 'notatki', 'notatek')} · ${links.length} ${plural(links.length, 'powiązanie', 'powiązania', 'powiązań')} — dotknij węzła, aby otworzyć; przeciągnij tło lub węzeł; zoom: pinch / kółko`;

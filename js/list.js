@@ -73,7 +73,7 @@ export function renderNotes() {
   empty.classList.remove('show');
 
   grid.innerHTML = filtered.map((note, i) => `
-    <article class="note-card ${note.pinned ? 'pinned' : ''} ${note.deleted ? 'is-trashed' : ''}" data-id="${escapeHtml(note.id)}" tabindex="0" role="button"
+    <article class="note-card ${note.pinned ? 'pinned' : ''} ${note.deleted ? 'is-trashed' : ''} ${state.editing && state.editing.note.id === note.id ? 'selected' : ''}" data-id="${escapeHtml(note.id)}" tabindex="0" role="button"
       style="${auraColor(note.aura) ? `--card-aura: ${escapeHtml(auraColor(note.aura))}; ` : ''}animation-delay: ${Math.min(i, 12) * 0.03}s">
       <h3>${escapeHtml(note.title || 'Bez tytułu')}</h3>
       <p>${escapeHtml(plainPreview(note.content)) || '&nbsp;'}</p>

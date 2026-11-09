@@ -2,6 +2,8 @@
 Serwuje repozytorium pod /nexus/ (jak GitHub Pages w podkatalogu). Opcjonalnie CHROMIUM_PATH i SHOTS=katalog."""
 import sys, threading, http.server, functools, json, base64, os, tempfile, urllib.parse
 from playwright.sync_api import sync_playwright
+import start_notes  # noqa: F401  (start od listy notatek)
+GO = '''t => { const el = [...document.querySelectorAll(`[data-go=${t}]`)].find((e) => { const r = e.getBoundingClientRect(); return r.width && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; }); el.click(); }'''
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TMP=tempfile.mkdtemp(prefix='nexus-e2e-')
 SHOTS=os.environ.get('SHOTS')
@@ -123,6 +125,7 @@ def features(pg,ctx,kind,K):
     check(K+'code highlighted',pg.locator('#markdownPreview pre .tok-k').count()==1 and pg.locator('#markdownPreview pre .tok-s').count()==1 and pg.locator('#markdownPreview pre .tok-c').count()==1)
     shot(pg,f'shot_{kind}_md.png')
     # przeciąganie zadań: t3 nad t1
+    pg.evaluate('document.querySelector("#markdownPreview li.task:nth-last-child(2)").scrollIntoView({block:"center"})'); pg.wait_for_timeout(150)
     h3=pg.locator('#markdownPreview li.task:has-text("t3") .drag-handle').bounding_box(); t1=pg.locator('#markdownPreview li.task:has-text("t1")').bounding_box()
     pg.mouse.move(h3['x']+h3['width']/2,h3['y']+h3['height']/2); pg.mouse.down()
     pg.mouse.move(t1['x']+20,t1['y']+3,steps=6); pg.mouse.up(); pg.wait_for_timeout(200)
@@ -161,7 +164,7 @@ def features(pg,ctx,kind,K):
     make_note(pg,kind,'G1','[[G2]]','graf')
     make_note(pg,kind,'G2','','graf')
     make_note(pg,kind,'G3','','inne')
-    menu(pg,kind,False); pg.click('#graphBtn'); pg.wait_for_selector('#graphView.active'); pg.wait_for_timeout(250)
+    menu(pg,kind,False); pg.evaluate(GO,'graph'); pg.wait_for_selector('#graphView.active'); pg.wait_for_timeout(250)
     total=pg.evaluate('nexus.getGraph().nodes.length')
     pg.select_option('#graphTag','graf'); pg.wait_for_timeout(250)
     check(K+'graph tag filter',pg.evaluate('nexus.getGraph().nodes.length')==2 and pg.evaluate('nexus.getGraph().links.length')==1 and total>2,(total,))
@@ -331,7 +334,7 @@ def run(kind):
         check(K+'history back from editor-chain works',pg.is_visible('#notesView'))
 
         # graph
-        pg.click('#graphBtn'); pg.wait_for_selector('#graphView.active'); pg.wait_for_timeout(200)
+        pg.evaluate(GO,'graph'); pg.wait_for_selector('#graphView.active'); pg.wait_for_timeout(200)
         info=pg.inner_text('#graphInfo')
         check(K+'graph 2 notes 1 link',info.startswith('2 notatki · 1 powiązanie'),info)
         check(K+'graph canvas sized',pg.evaluate('document.getElementById("graphCanvas").width')>300)
@@ -402,7 +405,7 @@ def run(kind):
         features(pg,ctx,kind,K)
 
         # theme
-        def theme(t): menu(pg,kind,False); pg.click('#themeToggle'); pg.wait_for_selector('.theme-choice'); pg.click(f'.theme-choice [data-theme={t}]'); pg.wait_for_timeout(120)
+        def theme(t): menu(pg,kind,False); pg.evaluate("document.querySelector('[data-act=theme]').click()"); pg.wait_for_selector('.theme-choice'); pg.click(f'.theme-choice [data-theme={t}]'); pg.wait_for_timeout(120)
         check(K+'auto theme by default',pg.evaluate('nexus.state.theme')=='auto')
         theme('light')
         check(K+'light theme',pg.evaluate('document.body.classList.contains("light") && document.documentElement.classList.contains("light")'))
@@ -418,9 +421,18 @@ def run(kind):
         check(K+'auto reacts to system change',not pg.evaluate('document.body.classList.contains("light")'))
 
         # layout list
-        menu(pg,kind,False); pg.click('.view-btn[data-layout=list]'); pg.wait_for_timeout(100)
-        check(K+'list layout',pg.evaluate('document.getElementById("notesGrid").classList.contains("list-view")'))
-        pg.click('.view-btn[data-layout=grid]')
+        if kind=='mobile':
+            menu(pg,kind,False); pg.click('.view-btn[data-layout=list]'); pg.wait_for_timeout(100)
+            check(K+'list layout',pg.evaluate('document.getElementById("notesGrid").classList.contains("list-view")'))
+            pg.click('.view-btn[data-layout=grid]')
+        else:
+            # laptop: lista i otwarta notatka obok siebie
+            pg.locator('.note-card').first.click(); pg.wait_for_selector('#editorView.active')
+            check(K+'three columns: list stays visible',pg.is_visible('#notesView') and pg.is_visible('#editorView') and pg.locator('.note-card.selected').count()==1)
+            pg.locator('.note-card').nth(1).click(); pg.wait_for_timeout(200)
+            check(K+'three columns: switching notes',pg.locator('.note-card.selected').count()==1 and pg.locator('.note-card').nth(1).get_attribute('class').find('selected')>=0)
+            pg.click('#backBtn'); pg.wait_for_timeout(200)
+            check(K+'three columns: placeholder',pg.is_visible('#editorPlaceholder'))
 
         # export / import
         menu(pg,kind,True)

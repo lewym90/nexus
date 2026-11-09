@@ -1,6 +1,7 @@
 """Nexus obok innych aplikacji na tym samym adresie: nie kasuje cudzych danych i przeżywa czyszczenie pamięci przez inne aplikacje."""
 import sys, threading, http.server, os, urllib.parse
 from playwright.sync_api import sync_playwright
+import start_notes  # noqa: F401  (start od listy notatek)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass

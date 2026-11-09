@@ -36,6 +36,9 @@ jobs:
       - name: Testy E2E (desktop)
         run: python3 tests/e2e.py desktop
 
+      - name: Pulpit, Zadania, nawigacja
+        run: python3 tests/home.py
+
       - name: Klawiatura ekranowa (symulacja iOS)
         run: python3 tests/keyboard.py
 
