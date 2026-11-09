@@ -7,7 +7,10 @@ export const LS = {
   workspaces: 'nexus-workspaces',
   templates: 'nexus-templates',
   backup: 'nexus-backup',
-  sync: 'nexus-sync'
+  sync: 'nexus-sync',
+  searches: 'nexus-searches',
+  savedSearches: 'nexus-saved-searches',
+  focus: 'nexus-focus'
 };
 
 export function readLS(key, fallback) {

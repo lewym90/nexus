@@ -21,6 +21,9 @@ import { exportData, importData, renderBackup, snoozeBackup } from './io.js';
 import { initSync, isPaired } from './sync.js';
 import { openSyncPanel } from './syncui.js';
 import { renderHome, renderTasks, setupHomeInteractions, collectTasks } from './home.js';
+import { setupSearch, setQuery, renderSearchPanel } from './search.js';
+import { setupFocus, enterFocus, exitFocus, isFocus } from './focus.js';
+import { openPalette, closePalette, paletteOpen, registerCommands } from './palette.js';
 
 import { initGraph, rebuildGraph, drawGraph, getGraph } from './graph.js';
 import { emptyTrash, purgeExpired, purgeNote, createQuickNote, createNoteFrom } from './actions.js';
@@ -104,6 +107,7 @@ function renderAll() {
   renderNotes();
   renderBackup();
   renderNavCounts();
+  renderSearchPanel();
   if (state.currentScreen === 'home') renderHome();
   if (state.currentScreen === 'tasks') renderTasks();
 }
@@ -131,13 +135,13 @@ function updateSyncStatus() {
   if (state.currentScreen === 'home') renderHome();
 }
 
-Object.assign(hooks, { isPaired, syncStatus: updateSyncStatus, switchWorkspace, renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
+Object.assign(hooks, { toast: showToast, showNotes, isPaired, syncStatus: updateSyncStatus, switchWorkspace, renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
 registerEditorHooks();
 
 /* ---------- Nowe notatki ---------- */
 
 async function onNewNote() {
-  if (state.currentScreen === 'editor') await leaveEditor();
+  // bez czekania: pole tytułu nowej notatki musi być gotowe od razu po kliknięciu
   if (state.currentView === 'journal') {
     const title = 'Dziennik ' + todayStr();
     const existing = findNoteByTitle(title);
@@ -274,9 +278,7 @@ function setupEventListeners() {
   // wyszukiwanie
   let searchTimer;
   const onSearch = async (e) => {
-    state.searchQuery = e.target.value;
-    $('searchInput').value = state.searchQuery;
-    $('searchInputMobile').value = state.searchQuery;
+    setQuery(e.target.value);
     if (state.currentScreen !== 'notes') await showNotes();
     clearTimeout(searchTimer);
     searchTimer = setTimeout(renderNotes, 60);
@@ -298,11 +300,30 @@ function setupEventListeners() {
     const t = e.target.closest('[data-go]');
     if (t) { e.preventDefault(); go(t.dataset.go); return; }
     if (e.target.closest('[data-act="theme"]')) { closeSidebar(); chooseTheme(); }
+    if (e.target.closest('[data-act="palette"]')) { closeSidebar(); openPalette(); }
   });
   $('tileNew').addEventListener('click', async () => { setNavView('all'); await onNewNote(); });
   $('tileJournal').addEventListener('click', async () => { setNavView('journal'); await onNewNote(); });
   $('syncStatusBtn').addEventListener('click', () => openSyncPanel(initSync));
   setupHomeInteractions();
+  setupSearch();
+  setupFocus();
+  registerCommands([
+    { label: 'Nowa notatka', keys: 'Ctrl/⌘ N', run: () => { setNavView('all'); onNewNote(); } },
+    { label: 'Nowy folder', run: () => createFolder() },
+    { label: 'Otwórz dziennik', hint: 'wpis na dziś', run: () => { setNavView('journal'); onNewNote(); } },
+    { label: 'Pokaż zadania', run: () => go('tasks') },
+    { label: 'Przejdź do grafu', run: () => go('graph') },
+    { label: 'Pulpit', run: () => go('home') },
+    { label: 'Wszystkie notatki', run: () => go('notes') },
+    { label: 'Szukaj w notatkach', run: () => go('search') },
+    { label: 'Tryb Focus', hint: 'tylko tytuł i treść', when: () => state.currentScreen === 'editor', run: enterFocus },
+    { label: 'Szablony', run: () => $('templatesBtn').click() },
+    { label: 'Zmień motyw', run: chooseTheme },
+    { label: 'Synchronizacja', hint: 'serwer i kopie', run: () => openSyncPanel(initSync) },
+    { label: 'Eksportuj dane', hint: 'kopia do pliku', run: exportData },
+    { label: 'Importuj dane', run: importData }
+  ]);
   $('emptyTrashBtn').addEventListener('click', emptyTrash);
 
   $('foldersList').addEventListener('click', async (e) => {
@@ -365,6 +386,7 @@ function setupEventListeners() {
   window.addEventListener('popstate', async (e) => {
     closeModal(null);
     let screen = (e.state && e.state.screen) || 'notes';
+    exitFocus();
     if (state.currentScreen === 'editor') await leaveEditor();
     if (screen === 'editor') screen = 'notes';
     if (screen === 'graph') { setView('graph'); rebuildGraph(''); }
@@ -380,7 +402,9 @@ function setupEventListeners() {
   document.addEventListener('keydown', (e) => {
     const mod = e.metaKey || e.ctrlKey;
     if (e.key === 'Escape') {
+      if (paletteOpen()) { closePalette(); return; }
       if (isModalOpen()) { closeModal(null); return; }
+      if (isFocus()) { exitFocus(); return; }
       if (isMobile() && $('sidebar').classList.contains('open')) { closeSidebar(); return; }
       if (state.currentScreen === 'editor' || state.currentScreen === 'graph') goBack();
       return;
@@ -389,10 +413,7 @@ function setupEventListeners() {
     const k = e.key.toLowerCase();
     if (mod && k === 'k') {
       e.preventDefault();
-      (async () => {
-        if (state.currentScreen !== 'notes') await showNotes();
-        (isMobile() ? $('searchInputMobile') : $('searchInput')).focus();
-      })();
+      openPalette();
     } else if (mod && k === 's') {
       e.preventDefault();
       if (state.editing) saveCurrentNote().then(() => showToast('Zapisano'));

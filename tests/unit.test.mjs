@@ -93,7 +93,33 @@ test('backupDue dla samych prywatnych notatek', () => {
   assert.equal(U.backupDue({ notes: [{ created: 50 * day, updated: 50 * day, private: true }], now }), true);
 });
 
+test('wyszukiwanie: bez polskich znaków, wiele słów, zaznaczenie', () => {
+  assert.equal(U.fold('Żółw ŁÓDŹ'), 'zolw lodz');
+  assert.equal(U.fold('Żółw').length, 4);
+  assert.ok(U.matchesQuery(['Żółty żółw', 'opis'], 'zolw ZOLTY'));
+  assert.ok(!U.matchesQuery(['Żółty żółw'], 'zolw kot'));
+  assert.equal(U.highlightText('Ala <ma> żółwia', 'zolw'), 'Ala &lt;ma&gt; <mark>żółw</mark>ia');
+  assert.ok(U.snippetAround('x'.repeat(300) + ' cel ' + 'y'.repeat(300), 'cel').includes('cel'));
+  assert.ok(U.snippetAround('x'.repeat(300) + ' cel ' + 'y'.repeat(300), 'cel').startsWith('…'));
+});
+
 /* ---------- markdown ---------- */
+
+test('markdown: numeracja list przez pustą linię i od numeru startowego', () => {
+  assert.equal((renderMarkdown('1. a\n\n2. b').match(/<ol/g) || []).length, 1);
+  assert.ok(renderMarkdown('5. x\n6. y').includes('<ol start="5">'));
+  assert.ok(!renderMarkdown('1. x').includes('start='));
+  assert.equal((renderMarkdown('- a\n\ntekst\n\n- b').match(/<ul/g) || []).length, 2); // akapit kończy listę
+});
+
+test('markdown: __, * i ~~ nie psują linków', () => {
+  const h = renderMarkdown('[a](https://x.pl/a__b__c) [[t__x__y]] **g**');
+  assert.ok(h.includes('href="https://x.pl/a__b__c"'));
+  assert.ok(h.includes('data-title="t__x__y">t__x__y</a>'));
+  assert.ok(h.includes('<strong>g</strong>'));
+  assert.ok(renderMarkdown('[**ważne**](https://a.pl)').includes('<strong>ważne</strong></a>'));
+  assert.ok(renderMarkdown('zobacz https://a.pl/x_y.').includes('<a href="https://a.pl/x_y"'));
+});
 test('markdown never lets raw HTML through', () => {
   const html = renderMarkdown('<img src=x onerror=alert(1)> **b** [x](javascript:alert(1)) [ok](https://a.pl)');
   assert.ok(!html.includes('<img'));

@@ -22,7 +22,11 @@ Prywatne notatki PWA po polsku: czysty JS (moduły ES), bez frameworka i builda.
 - Układ wg renderów: telefon (<768 px) – dolny pasek Pulpit/Notatki/Szukaj/Graf/Więcej, złoty „+” nad paskiem, nagłówek menu–NEXUS–szukaj; tablet (768–1099) – stałe menu boczne + treść; laptop (≥1100) – trzy kolumny: menu, lista, notatka (`isWide` w `js/editor.js`, CSS na dole `styles.css`).
 - Start na Pulpicie (`js/home.js`): kafelki, ostatnie notatki, zadania, projekty (= przestrzenie poza domyślną), status synchronizacji. Testy starsze startują od listy (`tests/start_notes.py`, klucz `nexus-start`).
 - Zadania: zbierane z linii `- [ ]` wszystkich notatek, odhaczanie zmienia treść notatki.
-- Do zrobienia z ETAP I: wyszukiwarka z filtrami i podświetlaniem, tryb Focus, paleta poleceń, poprawki 4 znanych błędów.
+- Wyszukiwarka (`js/search.js`, `fold`/`matchesQuery`/`highlightText` w `js/util.js`): bez polskich znaków, wiele słów, tytuł+treść+tagi+folder+nazwy załączników+przestrzeń; filtry data/dostęp/zakres; ostatnie (zapamiętywane po 1,5 s bez pisania) i zapisane wyszukiwania w localStorage.
+- Tryb Focus (`js/focus.js`): tylko tytuł i treść, szerokość wąska/średnia/szeroka (zapamiętana), pełny ekran tam, gdzie przeglądarka pozwala; Esc kończy.
+- Paleta poleceń (`js/palette.js`): Ctrl/⌘ K, „⌘ K” w wyszukiwarce, „Polecenia” w menu; polecenia i notatki po tytule.
+- Przełączanie notatek bez czekania na zapis (`detachEditor` w `js/editor.js`): pola nowej notatki są gotowe od razu.
+- ETAP I zakończony. Dalej ETAP II: historia wersji, rozbudowana synchronizacja (lista urządzeń, kolejka zmian), przywracanie pojedynczej notatki z kopii, karta odzyskiwania klucza, ekran „Gdzie są moje dane”.
 
 ## Synchronizacja
 - Serwer: `server/index.mjs`, port wybierany przez instalator od 18872 (zapisany w `/etc/nexus-sync.env`), trasa `/nexus-sync/` w `/etc/caddy/conf.d/nexus-sync.caddy`, dane w `/var/lib/nexus-sync`, usługa `nexus-sync`. Nigdy nie nadpisywać Caddyfile.
@@ -42,14 +46,7 @@ Prywatne notatki PWA po polsku: czysty JS (moduły ES), bez frameworka i builda.
 - `.scroll-spacer` chroni przed czarnym pasem u dołu na iOS, ale przy otwartej klawiaturze musi być wyłączony (`html.kb-open`).
 - Aplikacja w przeglądarce nie może sama zapisać pliku na iPhonie, dlatego bez serwera kopia to przypomnienie plus eksport jednym dotknięciem. Po połączeniu z serwerem baner znika, bo kopie robi serwer.
 
-## Znane błędy do naprawy
-1. Podzadania w podglądzie lądują obok zadania-rodzica: `li.task` nie ma `flex-wrap: wrap`.
-2. Listy numerowane: pusta linia zeruje numerację, a numer startowy jest ignorowany.
-3. `__`, `*` i `~~` w adresach linków oraz w `[[tytułach]]` psują link (formatowanie inline działa po ich wstawieniu).
-4. Gdy baza jest niedostępna, `run()` w `js/db.js` zwraca sukces i status pokazuje „Zapisano”.
-
 ## Mniejsze pomysły
 - Zmiana tytułu notatki powinna aktualizować linki `[[...]]`.
 - Powrót z notatki do grafu kasuje filtr, zoom i układ.
 - Import nadpisujący notatkę zostawia jej stare obrazy w bazie.
-- Wyszukiwarka nie ignoruje polskich znaków.

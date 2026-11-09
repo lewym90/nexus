@@ -21,6 +21,7 @@ export const state = {
   currentFolder: null,
   currentTag: null,
   searchQuery: '',
+  searchFilters: { date: 'any', access: 'any', scope: 'ws' },
   isPreview: false,
   theme: 'auto', // auto | dark | light | oled
   sidebarCollapsed: false,

@@ -34,9 +34,20 @@ export function initDB() {
 }
 
 /** Uruchamia `fn(stores…)` w jednej transakcji; zwraca wynik żądania zwróconego z fn. */
-function run(storeNames, mode, fn) {
+/** Baza zamknięta przez aktualizację w innej karcie otwiera się ponownie przy następnym zapisie. */
+async function ensureDb() {
+  if (!db && state.dbOk) { try { await initDB(); } catch { /* zostaje null */ } }
+  return db;
+}
+
+async function run(storeNames, mode, fn) {
+  const d = await ensureDb();
   return new Promise((resolve, reject) => {
-    if (!db) return resolve(null);
+    if (!d) {
+      if (mode === 'readwrite') { const e = new Error('Pamięć urządzenia niedostępna'); e.name = 'NoStorage'; return reject(e); }
+      return resolve(null);
+    }
+    const db = d;
     let tx;
     try { tx = db.transaction(storeNames, mode); } catch (e) { return reject(e); }
     const stores = storeNames.map((n) => tx.objectStore(n));

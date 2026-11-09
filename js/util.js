@@ -142,3 +142,57 @@ export function decodeKey(k) {
   const bytes = k.slice(2).match(/../g) || [];
   return new TextDecoder().decode(new Uint8Array(bytes.map((h) => parseInt(h, 16))));
 }
+
+/* ---------- Wyszukiwanie ---------- */
+
+/** Mała litera bez polskich i innych znaków diakrytycznych, znak w znak (długość bez zmian). */
+export function fold(str) {
+  let out = '';
+  for (const ch of String(str)) {
+    const f = ch.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace('ł', 'l');
+    out += f.length === ch.length ? f : ch.toLowerCase().length === ch.length ? ch.toLowerCase() : ch;
+  }
+  return out;
+}
+
+/** Słowa zapytania (każde musi wystąpić). */
+export const queryTerms = (q) => fold(q).split(/\s+/).filter(Boolean);
+
+export function matchesQuery(fields, q) {
+  const terms = queryTerms(q);
+  if (!terms.length) return true;
+  const hay = fold(fields.filter(Boolean).join('\n'));
+  return terms.every((t) => hay.includes(t));
+}
+
+/** Tekst z zaznaczonymi trafieniami (<mark>), bezpieczny do wstawienia jako HTML. */
+export function highlightText(text, q) {
+  const terms = queryTerms(q);
+  text = String(text);
+  if (!terms.length) return escapeHtml(text);
+  const f = fold(text);
+  const marks = new Array(text.length).fill(false);
+  for (const t of terms) {
+    let i = f.indexOf(t);
+    while (i !== -1) { for (let k = i; k < i + t.length; k++) marks[k] = true; i = f.indexOf(t, i + t.length); }
+  }
+  let out = '', open = false;
+  for (let i = 0; i < text.length; i++) {
+    if (marks[i] && !open) { out += '<mark>'; open = true; }
+    if (!marks[i] && open) { out += '</mark>'; open = false; }
+    out += escapeHtml(text[i]);
+  }
+  return out + (open ? '</mark>' : '');
+}
+
+/** Fragment tekstu wokół pierwszego trafienia (do podglądu na karcie). */
+export function snippetAround(text, q, max = 160) {
+  text = String(text);
+  const terms = queryTerms(q);
+  const f = fold(text);
+  const at = terms.map((t) => f.indexOf(t)).filter((i) => i >= 0).sort((a, b) => a - b)[0];
+  if (at === undefined || at < max * 0.6) return text.length > max ? text.slice(0, max).trimEnd() + '…' : text;
+  const start = Math.max(0, at - Math.round(max * 0.35));
+  const part = text.slice(start, start + max);
+  return '…' + part.trimStart() + (start + max < text.length ? '…' : '');
+}

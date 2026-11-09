@@ -7,6 +7,7 @@ export function setView(screen) {
   if (screen === 'notes') state.animateNext = true;
   ['home', 'notes', 'tasks', 'graph', 'editor'].forEach((v) => $(v + 'View').classList.toggle('active', v === screen));
   document.body.dataset.screen = screen;
+  if (screen !== 'editor') document.body.classList.remove('focus');
   $('mainContent').scrollTop = 0;
   ['notesView', 'editorView'].forEach((id) => { $(id).scrollTop = 0; });
 }
