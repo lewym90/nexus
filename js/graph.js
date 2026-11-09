@@ -1,5 +1,5 @@
 // Graf powiązań: układ siłowy, przesuwanie tła, przeciąganie węzłów, zoom (kółko / pinch), filtr po tagu.
-import { state, hooks, wsNotes, isLive, DEFAULT_AURA } from './state.js';
+import { state, hooks, wsNotes, isLive, DEFAULT_AURA, auraColor } from './state.js';
 import { $ } from './ui.js';
 import { extractWikiTargets, plural } from './util.js';
 
@@ -124,32 +124,37 @@ export function drawGraph() {
   const css = getComputedStyle(document.body);
   const text = css.getPropertyValue('--text').trim() || '#f0f2f5';
   const muted = css.getPropertyValue('--text-muted').trim() || '#8a929e';
-  const surface = css.getPropertyValue('--bg').trim() || '#0c0e12';
+  const surface = css.getPropertyValue('--bg-elevated').trim() || '#151b23';
+  const gold = css.getPropertyValue('--gold').trim() || '#d9b26a';
+  const font = css.getPropertyValue('--font').trim() || 'system-ui, sans-serif';
   const { nodes, links, view } = g;
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
   if (!nodes.length) {
-    ctx.fillStyle = muted; ctx.font = '15px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = muted; ctx.font = `15px ${font}`; ctx.textAlign = 'center';
     ctx.fillText(g.tag ? 'Brak notatek z tym tagiem' : 'Brak notatek w tej przestrzeni', W / 2, H / 2);
   }
   ctx.setTransform(dpr * view.k, 0, 0, dpr * view.k, dpr * view.x, dpr * view.y);
   ctx.lineWidth = 1.5 / view.k;
-  ctx.strokeStyle = 'rgba(59,130,246,0.45)';
+  ctx.strokeStyle = gold; ctx.globalAlpha = 0.4;
   links.forEach(({ a, b }) => { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); });
+  ctx.globalAlpha = 1;
   nodes.forEach((n) => {
     ctx.beginPath();
     ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
     ctx.fillStyle = surface;
     ctx.fill();
     ctx.lineWidth = (n.deg ? 3 : 2) / view.k;
-    ctx.strokeStyle = n.aura || DEFAULT_AURA;
+    ctx.strokeStyle = auraColor(n.aura) || gold;
     ctx.globalAlpha = n.deg ? 1 : 0.6;
+    if (n.deg) { ctx.shadowColor = gold; ctx.shadowBlur = 12; }
     ctx.stroke();
+    ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     if (view.k > 0.45) {
       ctx.fillStyle = text;
-      ctx.font = `${12 / view.k}px system-ui, -apple-system, sans-serif`;
+      ctx.font = `${12 / view.k}px ${font}`;
       ctx.textAlign = 'center';
       ctx.fillText(n.title.length > 18 ? n.title.slice(0, 17) + '…' : n.title, n.x, n.y + n.r + 14 / view.k);
     }

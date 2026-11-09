@@ -13,6 +13,14 @@ Prywatne notatki PWA po polsku: czysty JS (moduły ES), bez frameworka i builda.
 - Testy: `npm test` (jednostkowe, E2E mobile i desktop, symulacja klawiatury, audyt układu). CI w GitHub Actions.
 - Mapa plików: tabela „Struktura” w `README.md`.
 
+## Wygląd (ETAP I, porcja 1)
+- Motywy: auto (wg systemu), ciemny, jasny, OLED; klasa `light`/`oled` na `<html>` i `<body>`, tokeny kolorów na górze `styles.css`.
+- Złoto stonowane w interfejsie (`--accent`), jaskrawe tylko w ikonie i przyciskach (`--gold-grad`).
+- Czcionki w `fonts/` (OFL): Inter (treść), Manrope (nagłówki), JetBrains Mono (kod), Michroma (znak słowny NEXUS).
+- Ikona: `icons/` z oryginału użytkownika (N z piórem i zawiniętym rogiem, czarny margines pod zaokrąglenie iOS); zakładka 16/32 px z płaskiego N z orbitą; `brand/logo.webp` na ekranie startowym i w pustych widokach; `brand/og.jpg` w podglądzie linku.
+- Kolory notatek: zapisane wartości bez zmian, wyświetlane stonowane (`AURA_DISPLAY` w `js/state.js`); dawny niebieski = bez koloru.
+- Plan dalej: porcja 2 – układ telefonu (dolny pasek: Pulpit, Notatki, Szukaj, Graf, Więcej), tabletu (2 kolumny), laptopa (3 kolumny); porcja 3 – Pulpit (projekty = przestrzenie poza domyślną), wyszukiwarka, tryb Focus.
+
 ## Synchronizacja
 - Serwer: `server/index.mjs`, port wybierany przez instalator od 18872 (zapisany w `/etc/nexus-sync.env`), trasa `/nexus-sync/` w `/etc/caddy/conf.d/nexus-sync.caddy`, dane w `/var/lib/nexus-sync`, usługa `nexus-sync`. Nigdy nie nadpisywać Caddyfile.
 - Kod `https://serwer/nexus-sync#sekret`: z sekretu powstają token (SHA-256 `nexus-auth:`) i klucz AES-GCM (SHA-256 `nexus-enc:`). Na serwerze jest tylko token. Zgubiony kod oznacza niemożliwy do odczytania serwer, ale urządzenia zachowują dane.

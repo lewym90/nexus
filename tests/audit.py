@@ -57,7 +57,7 @@ def run(name, W, H, touch):
         pg.on('requestfailed', lambda r: errs.append('REQFAIL ' + r.url))
         pg.on('response', lambda r: errs.append(f'HTTP {r.status} {r.url}') if r.status >= 400 else None)
         K = name + ': '
-        pg.goto(URL); pg.wait_for_selector('body[data-ready="1"]', state='attached'); pg.wait_for_timeout(500)
+        pg.goto(URL); pg.wait_for_selector('body[data-ready="1"]', state='attached'); pg.wait_for_timeout(1300)
         check(K + 'splash removed', pg.locator('#splash').count() == 0)
         shell(pg, K); check(K + 'empty list: no overflow', not overflow(pg), overflow(pg)); shot(pg, f'{name}_empty')
         mobile = pg.evaluate('matchMedia("(max-width: 900px)").matches')
@@ -107,7 +107,7 @@ def run(name, W, H, touch):
             pg.wait_for_selector('.modal'); r = pg.evaluate('(() => { const r = document.querySelector(".modal").getBoundingClientRect(); return [r.left, r.right, r.top, r.bottom, innerWidth, innerHeight] })()')
             check(K + 'modal inside viewport', r[0] >= 0 and r[1] <= r[4] and r[2] >= 0 and r[3] <= r[5], r); pg.keyboard.press('Escape')
         # jasny motyw
-        pg.click('#themeToggle'); pg.wait_for_timeout(150); shot(pg, f'{name}_light'); check(K + 'light theme: no overflow', not overflow(pg), overflow(pg))
+        pg.click('#themeToggle'); pg.wait_for_selector('.theme-choice'); pg.click('.theme-choice [data-theme=light]'); pg.wait_for_timeout(150); shot(pg, f'{name}_light'); check(K + 'light theme: no overflow', not overflow(pg), overflow(pg))
         errs_f = [e for e in errs if 'PAGEERR' in e or 'CONSOLE' in e or 'REQFAIL' in e or 'HTTP 4' in e or 'HTTP 5' in e]
         check(K + 'no console/page/network errors', not errs_f, errs_f)
         b.close()

@@ -402,12 +402,20 @@ def run(kind):
         features(pg,ctx,kind,K)
 
         # theme
-        menu(pg,kind,False); pg.click('#themeToggle'); pg.wait_for_timeout(100)
-        check(K+'light theme',pg.evaluate('document.body.classList.contains("light")'))
+        def theme(t): menu(pg,kind,False); pg.click('#themeToggle'); pg.wait_for_selector('.theme-choice'); pg.click(f'.theme-choice [data-theme={t}]'); pg.wait_for_timeout(120)
+        check(K+'auto theme by default',pg.evaluate('nexus.state.theme')=='auto')
+        theme('light')
+        check(K+'light theme',pg.evaluate('document.body.classList.contains("light") && document.documentElement.classList.contains("light")'))
+        check(K+'document background follows theme',pg.evaluate('getComputedStyle(document.documentElement).backgroundColor')=='rgb(244, 243, 239)')
         shot(pg,f'shot_{kind}_light.png')
         pg.reload(); pg.wait_for_selector('.note-card')
         check(K+'theme persisted',pg.evaluate('document.body.classList.contains("light")'))
-        menu(pg,kind,False); pg.click('#themeToggle')
+        theme('oled')
+        check(K+'oled theme',pg.evaluate('document.documentElement.classList.contains("oled") && getComputedStyle(document.body).backgroundColor=="rgb(0, 0, 0)"'))
+        pg.emulate_media(color_scheme='light'); theme('auto')
+        check(K+'auto follows system',pg.evaluate('document.body.classList.contains("light")'))
+        pg.emulate_media(color_scheme='dark'); pg.wait_for_timeout(100)
+        check(K+'auto reacts to system change',not pg.evaluate('document.body.classList.contains("light")'))
 
         # layout list
         menu(pg,kind,False); pg.click('.view-btn[data-layout=list]'); pg.wait_for_timeout(100)

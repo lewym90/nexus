@@ -1,6 +1,9 @@
 // Współdzielony stan aplikacji + „haki” do wywołań między modułami (bez zależności cyklicznych).
 
-export const DEFAULT_AURA = '#3b82f6';
+export const DEFAULT_AURA = '#3b82f6'; // zapisany kolor „bez koloru” (zgodność ze starszymi notatkami)
+/** Stonowane odpowiedniki zapisanych kolorów notatek; zapisany kolor się nie zmienia. */
+export const AURA_DISPLAY = { '#d4a017': '#c9a45c', '#10b981': '#5e9c7e', '#ef4444': '#b5615a', '#8b5cf6': '#8c78b8', '#06b6d4': '#4f9aa6' };
+export const auraColor = (aura) => (aura && aura !== DEFAULT_AURA ? AURA_DISPLAY[aura] || aura : '');
 export const TRASH_DAYS = 30;
 
 export const state = {
@@ -18,7 +21,7 @@ export const state = {
   currentTag: null,
   searchQuery: '',
   isPreview: false,
-  theme: 'dark',
+  theme: 'auto', // auto | dark | light | oled
   sidebarCollapsed: false,
   dbOk: true,
   animateNext: true // animuj karty tylko przy zmianie widoku, nie przy każdym odświeżeniu

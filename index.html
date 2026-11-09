@@ -3,10 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0c0e12">
+  <meta name="theme-color" content="#0d1117">
   <meta name="color-scheme" content="dark light">
   <meta name="format-detection" content="telephone=no">
-  <meta name="description" content="Nexus – precyzyjne notatki. Prywatne, lokalne, bez konta.">
+  <meta name="description" content="Nexus – Precyzyjne notatki. Prywatne. Na każdym Twoim urządzeniu. Bez konta, offline, z szyfrowaną synchronizacją.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Nexus">
+  <meta property="og:title" content="Nexus – precyzyjne notatki">
+  <meta property="og:description" content="Precyzyjne notatki. Prywatne. Na każdym Twoim urządzeniu.">
+  <meta property="og:url" content="https://lewym90.github.io/nexus/">
+  <meta property="og:image" content="https://lewym90.github.io/nexus/brand/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nexus – złote N z piórem i hasło Precision. Privacy. Freedom.">
+  <meta property="og:locale" content="pl_PL">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lewym90.github.io/nexus/brand/og.jpg">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,13 +29,16 @@
   <link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+  <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/michroma-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <title>Nexus</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="splash" id="splash" aria-hidden="true"><img src="icons/icon-192.png" alt="" width="96" height="96"></div>
+  <div class="splash" id="splash" aria-hidden="true"><img src="brand/logo.webp" alt="" width="148" height="148"><span class="wordmark">NEXUS</span><p>Precyzyjne notatki. Prywatne. Na każdym Twoim urządzeniu.</p></div>
   <div class="scroll-spacer" aria-hidden="true"></div>
   <div class="status-fill" aria-hidden="true"></div>
   <div class="aurora-bg"></div>
@@ -33,9 +48,8 @@
       <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Menu" aria-controls="sidebar">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
       </button>
-      <div class="logo">
-        <img src="icons/icon-192.png" alt="" class="logo-img">
-        <span class="logo-text">Nexus</span>
+      <div class="logo" aria-label="Nexus">
+        <span class="wordmark logo-text" aria-hidden="true">NEXUS</span>
       </div>
     </div>
     <div class="header-center">
@@ -46,7 +60,7 @@
     </div>
     <div class="header-right">
       <select id="workspaceSelect" class="workspace-select header-ws" aria-label="Przestrzeń robocza"></select>
-      <button class="icon-btn" id="themeToggle" aria-label="Przełącz motyw" title="Motyw jasny/ciemny">
+      <button class="icon-btn" id="themeToggle" aria-label="Motyw" title="Motyw">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       </button>
       <button class="icon-btn" id="graphBtn" aria-label="Graf powiązań" title="Graf powiązań">
@@ -250,12 +264,12 @@
           <div class="meta-row aura-picker" id="auraPicker">
             <span>Kolor:</span>
             <div class="aura-colors">
-              <button class="aura-dot" data-color="#3b82f6" style="background:#3b82f6" aria-label="Niebieski"></button>
-              <button class="aura-dot" data-color="#d4a017" style="background:#d4a017" aria-label="Złoty"></button>
-              <button class="aura-dot" data-color="#10b981" style="background:#10b981" aria-label="Zielony"></button>
-              <button class="aura-dot" data-color="#ef4444" style="background:#ef4444" aria-label="Czerwony"></button>
-              <button class="aura-dot" data-color="#8b5cf6" style="background:#8b5cf6" aria-label="Fioletowy"></button>
-              <button class="aura-dot" data-color="#06b6d4" style="background:#06b6d4" aria-label="Turkusowy"></button>
+              <button class="aura-dot none" data-color="#3b82f6" aria-label="Bez koloru" title="Bez koloru"></button>
+              <button class="aura-dot" data-color="#d4a017" style="background:#c9a45c" aria-label="Złoty"></button>
+              <button class="aura-dot" data-color="#10b981" style="background:#5e9c7e" aria-label="Zielony"></button>
+              <button class="aura-dot" data-color="#ef4444" style="background:#b5615a" aria-label="Czerwony"></button>
+              <button class="aura-dot" data-color="#8b5cf6" style="background:#8c78b8" aria-label="Fioletowy"></button>
+              <button class="aura-dot" data-color="#06b6d4" style="background:#4f9aa6" aria-label="Turkusowy"></button>
             </div>
           </div>
           <div class="meta-col">

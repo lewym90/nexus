@@ -1,6 +1,6 @@
 // Punkt wejścia: inicjalizacja, spinanie zdarzeń, parametry uruchomienia (skróty / udostępnianie).
 import { state, hooks } from './state.js';
-import { $, isMobile, showToast, closeModal, isModalOpen, askConfirm } from './ui.js';
+import { $, isMobile, showToast, closeModal, isModalOpen, askConfirm, openModal } from './ui.js';
 import { readLS, LS } from './storage.js';
 import { initDB, loadNotes, migrateLegacyAttachments, revokeAllBlobURLs } from './db.js';
 import { findNoteByTitle } from './state.js';
@@ -25,15 +25,54 @@ import { emptyTrash, purgeExpired, purgeNote, createQuickNote, createNoteFrom } 
 
 /* ---------- Ustawienia / motyw ---------- */
 
+const THEMES = [
+  { id: 'auto', label: 'Automatyczny', hint: 'jak w systemie: jasny w dzień, ciemny wieczorem', swatch: 'linear-gradient(90deg, #f4f3ef 50%, #0d1117 50%)' },
+  { id: 'dark', label: 'Ciemny premium', hint: '', swatch: '#0d1117' },
+  { id: 'light', label: 'Jasny premium', hint: '', swatch: '#f4f3ef' },
+  { id: 'oled', label: 'Czarny OLED', hint: 'oszczędza baterię na ekranach OLED', swatch: '#000' }
+];
+const systemDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+const resolvedTheme = () => (state.theme === 'auto' ? (systemDark && !systemDark.matches ? 'light' : 'dark') : state.theme);
+
+/** Klasa motywu trafia na <html> i <body>: tło dokumentu (także pod paskami systemu) ma kolor motywu. */
 function applyTheme() {
-  document.body.classList.toggle('light', state.theme === 'light');
+  const t = resolvedTheme();
+  for (const el of [document.documentElement, document.body]) {
+    el.classList.toggle('light', t === 'light');
+    el.classList.toggle('oled', t === 'oled');
+  }
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = state.theme === 'light' ? '#f5f6f8' : '#0c0e12';
+  if (meta) meta.content = { light: '#f4f3ef', oled: '#000000' }[t] || '#0d1117';
+  if (state.currentScreen === 'graph') drawGraph();
+}
+if (systemDark) systemDark.addEventListener('change', () => { if (state.theme === 'auto') applyTheme(); });
+
+function chooseTheme() {
+  const list = document.createElement('div');
+  list.className = 'choice-list theme-choice';
+  THEMES.forEach((t) => {
+    const row = document.createElement('div');
+    row.className = 'choice' + (state.theme === t.id ? ' current' : '');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'choice-main';
+    b.dataset.theme = t.id;
+    b.innerHTML = `<span class="swatch" style="background:${t.swatch}"></span><span><strong>${t.label}</strong>${t.hint ? `<br><small class="muted">${t.hint}</small>` : ''}</span>`;
+    b.addEventListener('click', () => {
+      state.theme = t.id;
+      applyTheme();
+      saveSettings();
+      closeModal(null);
+    });
+    row.appendChild(b);
+    list.appendChild(row);
+  });
+  openModal({ title: 'Motyw', content: list, actions: [{ label: 'Zamknij', value: null }] });
 }
 
 function loadSettings() {
   const s = readLS(LS.settings, {});
-  state.theme = s.theme === 'light' ? 'light' : 'dark';
+  state.theme = s.themeV === 2 && ['auto', 'dark', 'light', 'oled'].includes(s.theme) ? s.theme : 'auto';
   state.currentLayout = s.layout === 'list' ? 'list' : 'grid';
   state.currentSort = ['updated', 'created', 'title'].includes(s.sort) ? s.sort : 'updated';
   state.currentWorkspace = typeof s.workspace === 'string' ? s.workspace : 'default';
@@ -252,12 +291,7 @@ function setupEventListeners() {
 
   $('menuToggle').addEventListener('click', toggleSidebar);
   $('sidebarBackdrop').addEventListener('click', closeSidebar);
-  $('themeToggle').addEventListener('click', () => {
-    state.theme = state.theme === 'light' ? 'dark' : 'light';
-    applyTheme();
-    saveSettings();
-    if (state.currentScreen === 'graph') drawGraph();
-  });
+  $('themeToggle').addEventListener('click', chooseTheme);
 
   $('graphBtn').addEventListener('click', showGraph);
   $('closeGraphBtn').addEventListener('click', goBack);
@@ -352,9 +386,12 @@ function setupViewportSync() {
   window.addEventListener('orientationchange', () => { baseH = window.innerHeight; sync(); });
 }
 
+const splashShown = performance.now();
 function hideSplash() {
   const s = $('splash');
   if (!s) return;
+  const wait = 700 - (performance.now() - splashShown); // znak marki zdąży się pokazać, ale start nie jest wstrzymywany
+  if (wait > 0) { setTimeout(hideSplash, wait); return; }
   s.classList.add('hide');
   setTimeout(() => s.remove(), 400);
 }

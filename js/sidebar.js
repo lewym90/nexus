@@ -11,7 +11,7 @@ export const saveWorkspaces = () => writeLS(LS.workspaces, state.workspaces);
 
 export function saveSettings() {
   const s = state;
-  writeLS(LS.settings, { theme: s.theme, layout: s.currentLayout, sort: s.currentSort, workspace: s.currentWorkspace, sidebarCollapsed: s.sidebarCollapsed });
+  writeLS(LS.settings, { theme: s.theme, themeV: 2, layout: s.currentLayout, sort: s.currentSort, workspace: s.currentWorkspace, sidebarCollapsed: s.sidebarCollapsed });
 }
 
 export function closeSidebar() {
