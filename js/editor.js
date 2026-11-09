@@ -71,6 +71,13 @@ function updateFlagIcons() {
   arc.classList.toggle('on-accent', note.archived);
   arc.setAttribute('aria-pressed', String(note.archived));
   arc.title = arc.ariaLabel = note.archived ? 'Przywróć z archiwum' : 'Archiwizuj';
+  const priv = !!note.private;
+  const lock = $('privateBtn');
+  lock.classList.toggle('on-gold', priv);
+  lock.setAttribute('aria-pressed', String(priv));
+  lock.title = lock.ariaLabel = priv ? 'Notatka prywatna: tylko na tym urządzeniu' : 'Notatka dostępna na wszystkich urządzeniach';
+  $('privateShackle').setAttribute('d', priv ? 'M8 11V7a4 4 0 0 1 8 0v4' : 'M8 11V7a4 4 0 0 1 7.5-2');
+  document.querySelectorAll('#accessSeg .view-btn').forEach((b) => b.classList.toggle('active', (b.dataset.private === '1') === priv));
   $('trashBanner').style.display = note.deleted ? '' : 'none';
   $('deleteBtn').title = $('deleteBtn').ariaLabel = note.deleted ? 'Usuń trwale' : 'Do kosza';
 }
@@ -379,6 +386,19 @@ export async function toggleFlag(flag) {
   updateFlagIcons();
   showToast(flag === 'pinned' ? (note.pinned ? 'Przypięto' : 'Odpięto') : (note.favorite ? 'Dodano do ulubionych' : 'Usunięto z ulubionych'));
   if (!ed.isNew) await persist(note);
+}
+
+/** Prywatna notatka zostaje tylko na tym urządzeniu. Brak pola oznacza notatkę dostępną wszędzie. */
+export async function setNotePrivate(flag) {
+  const ed = state.editing;
+  if (!ed || !!ed.note.private === flag) return;
+  const synced = hooks.isPaired && hooks.isPaired();
+  if (flag && synced && !ed.isNew && !(await askConfirm('Ustawić jako prywatną?', 'Notatka zostanie tylko na tym urządzeniu. Zniknie z serwera i z pozostałych urządzeń, a w starszych kopiach na serwerze pozostanie jeszcze do 30 dni. Nie będzie też objęta kolejnymi kopiami.', 'Ustaw', true))) return;
+  if (state.editing !== ed) return;
+  if (flag) ed.note.private = true; else delete ed.note.private;
+  updateFlagIcons();
+  showToast(flag ? 'Prywatna: tylko na tym urządzeniu' : 'Dostępna na wszystkich urządzeniach');
+  if (!ed.isNew) await persist(ed.note);
 }
 
 /* ---------- Pasek formatowania ---------- */

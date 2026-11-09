@@ -17,6 +17,7 @@ Prywatne notatki PWA po polsku: czysty JS (moduły ES), bez frameworka i builda.
 - Serwer: `server/index.mjs`, port wybierany przez instalator od 18872 (zapisany w `/etc/nexus-sync.env`), trasa `/nexus-sync/` w `/etc/caddy/conf.d/nexus-sync.caddy`, dane w `/var/lib/nexus-sync`, usługa `nexus-sync`. Nigdy nie nadpisywać Caddyfile.
 - Kod `https://serwer/nexus-sync#sekret`: z sekretu powstają token (SHA-256 `nexus-auth:`) i klucz AES-GCM (SHA-256 `nexus-enc:`). Na serwerze jest tylko token. Zgubiony kod oznacza niemożliwy do odczytania serwer, ale urządzenia zachowują dane.
 - `js/sync.js`: najpierw pobieranie, potem wysyłanie. Zmiany wykrywa skrót względem mapy `map` w localStorage, więc kod notatek nic o synchronizacji nie wie. Przy otwartym edytorze pobieranie czeka.
+- Notatka prywatna: pole `private: true`, a brak pola znaczy „wszędzie” (dzięki temu istniejące notatki nie wysyłają się od nowa). `push` pomija prywatne, a wcześniej wysłane usuwa z serwera; pobieranie i przywracanie kopii ich nie nadpisują.
 - `tests/sync.py` uruchamia prawdziwy serwer i kilka urządzeń.
 
 ## Współistnienie z innymi aplikacjami

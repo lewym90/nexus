@@ -2,7 +2,7 @@
 // Wszystkie aplikacje pod lewym90.github.io dzielą jedną pamięć podręczną i inne aplikacje potrafią ją czyścić.
 // Dlatego: kasujemy wyłącznie własne wpisy (nexus-v*), a pliki mają kopię w osobnej bazie IndexedDB.
 const CACHE_PREFIX = 'nexus-v';
-const CACHE_NAME = CACHE_PREFIX + '8';
+const CACHE_NAME = CACHE_PREFIX + '9';
 const MIRROR_DB = 'nexus-shell';
 const ASSETS = [
   './',
