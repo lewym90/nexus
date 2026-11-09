@@ -25,19 +25,27 @@ export function createDraft(opts = {}) {
 /** Laptop: lista notatek i notatka obok siebie (trzy kolumny). */
 export const isWide = () => window.matchMedia('(min-width: 1100px)').matches;
 
-export async function startNewNote(opts = {}) {
+/** Zamyka bieżącą notatkę bez czekania: treść jest odczytana od razu, zapis kończy się w tle. */
+function detachEditor() {
+  if (!state.editing) return;
+  saveCurrentNote();
+  state.editing = null;
+  if (hooks.dataChanged) hooks.dataChanged();
+}
+
+export function startNewNote(opts = {}) {
   hooks.closeSidebar();
-  if (state.editing) await leaveEditor();
+  detachEditor();
   state.editing = { note: createDraft(opts), isNew: true };
   showEditor(true);
 }
 
-export async function openNote(id) {
+export function openNote(id) {
   const note = state.notes.find((n) => n.id === id);
   if (!note) return;
   hooks.closeSidebar();
   if (state.editing && state.editing.note.id === id) return;
-  if (state.editing) await leaveEditor(); // trzy kolumny: poprzednia notatka zostaje zapisana
+  detachEditor(); // trzy kolumny: poprzednia notatka zostaje zapisana
   state.editing = { note, isNew: false };
   showEditor(false);
 }
@@ -302,6 +310,8 @@ export function scheduleSave() {
   saveTimer = setTimeout(() => saveCurrentNote(), 800);
 }
 
+let lastSaveError = 0;
+
 export async function saveCurrentNote({ touch = false } = {}) {
   const ed = state.editing;
   if (!ed) return;
@@ -323,10 +333,15 @@ export async function saveCurrentNote({ touch = false } = {}) {
     await putNote(note);
     $('saveStatus').textContent = 'Zapisano';
   } catch (e) {
-    $('saveStatus').textContent = '';
-    showToast(e && e.name === 'QuotaExceededError' ? 'Brak miejsca na zapis' : 'Nie udało się zapisać notatki');
+    $('saveStatus').textContent = 'Nie zapisano';
+    $('saveStatus').classList.add('is-error');
+    if (Date.now() - lastSaveError > 30000) { // bez zalewania komunikatami przy każdym autozapisie
+      lastSaveError = Date.now();
+      showToast(e && e.name === 'QuotaExceededError' ? 'Brak miejsca na zapis' : e && e.name === 'NoStorage' ? 'Pamięć urządzenia niedostępna – zmiany nie są zapisywane' : 'Nie udało się zapisać notatki');
+    }
     return;
   }
+  $('saveStatus').classList.remove('is-error');
   if (state.editing === ed) {
     hooks.updateTags();
     if (state.currentScreen !== 'editor' || isWide()) hooks.renderNotes();

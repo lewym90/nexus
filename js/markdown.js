@@ -68,24 +68,31 @@ export function inlineMd(src, exists = () => true) {
   let s = String(src).replace(/\u0000/g, '');
   s = s.replace(/`([^`\n]+)`/g, (m, c) => { codes.push(`<code>${escapeHtml(c)}</code>`); return `\u0000${codes.length - 1}\u0000`; });
   s = escapeHtml(s);
+  // Linki trafiają do schowka przed formatowaniem: __, * i ~~ w adresie lub tytule notatki nie mogą ich psuć.
+  const keep = (html) => { codes.push(html); return `\u0000${codes.length - 1}\u0000`; };
   s = s.replace(/\[\[([^\]\n]+)\]\]/g, (m, inner) => {
     const [target, label] = inner.split('|');
     const t = target.trim();
-    return `<a href="#" class="wiki-link${exists(unescapeHtml(t)) ? '' : ' missing'}" data-title="${t}">${(label || target).trim()}</a>`;
+    return keep(`<a href="#" class="wiki-link${exists(unescapeHtml(t)) ? '' : ' missing'}" data-title="${t}">${(label || target).trim()}</a>`);
   });
-  s = s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  s = s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g, (m, label, href) => keep(`<a href="${href}" target="_blank" rel="noopener noreferrer">${emphasis(label)}</a>`));
+  s = s.replace(/(^|[\s(])(https?:\/\/[^\s<]+[^\s<.,;:!?)])/g, (m, pre, href) => pre + keep(`<a href="${href}" target="_blank" rel="noopener noreferrer">${href}</a>`));
+  s = emphasis(s);
+  return s.replace(/\u0000(\d+)\u0000/g, (m, i) => codes[+i]);
+}
+
+function emphasis(s) {
   s = s.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/__([^_\n]+?)__/g, '<strong>$1</strong>');
   s = s.replace(/(^|[^*\w])\*([^*\s](?:[^*\n]*[^*\s])?)\*(?!\*)/g, '$1<em>$2</em>');
-  s = s.replace(/~~([^~\n]+?)~~/g, '<del>$1</del>');
-  return s.replace(/\u0000(\d+)\u0000/g, (m, i) => codes[+i]);
+  return s.replace(/~~([^~\n]+?)~~/g, '<del>$1</del>');
 }
 
 /* ---------- Bloki ---------- */
 
 const RE_TASK = /^(\s*)[-*+]\s+\[([ xX])\]\s+(.*)$/;
 const RE_UL = /^(\s*)[-*+]\s+(.*)$/;
-const RE_OL = /^(\s*)\d+[.)]\s+(.*)$/;
+const RE_OL = /^(\s*)(\d+)[.)]\s+(.*)$/;
 const RE_HR = /^\s*([-*_])(\s*\1){2,}\s*$/;
 const RE_TABLE_SEP = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 
@@ -125,7 +132,7 @@ function buildList(items, interactive) {
     while (stack.length && it.indent < stack[stack.length - 1].indent) out += '</li></' + stack.pop().type + '>';
     const top = stack[stack.length - 1];
     if (!top || it.indent > top.indent) {
-      out += `<${it.type}>`;
+      out += it.type === 'ol' && it.start > 1 ? `<ol start="${it.start}">` : `<${it.type}>`;
       stack.push({ indent: it.indent, type: it.type });
     } else {
       out += '</li>';
@@ -165,7 +172,11 @@ export function renderMarkdown(text, { exists = () => true, interactive = false 
       while (i < lines.length && !/^\s*```/.test(lines[i])) code.push(lines[i++]);
       out.push(`<pre><code${m[1] ? ` class="lang-${escapeHtml(m[1])}"` : ''}>${highlight(code.join('\n'), m[1])}</code></pre>`);
     } else if (/^\s*$/.test(line)) {
-      flushPara(); flushList();
+      flushPara();
+      // pusta linia między punktami nie przerywa listy (inaczej numeracja zaczynałaby się od nowa)
+      let j = i + 1;
+      while (j < lines.length && /^\s*$/.test(lines[j])) j++;
+      if (!(list.length && j < lines.length && isListLine(lines[j]))) flushList();
     } else if ((m = line.match(/^(#{1,6})\s+(.*)$/))) {
       flushPara(); flushList();
       out.push(`<h${m[1].length}>${im(m[2])}</h${m[1].length}>`);
@@ -194,7 +205,7 @@ export function renderMarkdown(text, { exists = () => true, interactive = false 
       list.push({ type: 'ul', indent: indentOf(m[1]), html: im(m[2]), line: i });
     } else if ((m = line.match(RE_OL))) {
       flushPara();
-      list.push({ type: 'ol', indent: indentOf(m[1]), html: im(m[2]), line: i });
+      list.push({ type: 'ol', indent: indentOf(m[1]), start: Number(m[2]), html: im(m[3]), line: i });
     } else {
       flushList();
       para.push(line);

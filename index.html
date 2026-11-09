@@ -55,7 +55,7 @@
     <div class="header-center">
       <div class="search-wrapper">
         <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <kbd class="search-kbd">⌘ K</kbd>
+        <button type="button" class="search-kbd" data-act="palette" title="Paleta poleceń (Ctrl/⌘ K)">⌘ K</button>
         <input type="search" id="searchInput" placeholder="Szukaj w notatkach…" class="search-input" aria-label="Szukaj notatek" autocomplete="off">
       </div>
     </div>
@@ -135,6 +135,7 @@
 
     <div class="sidebar-footer">
       <p class="backup-info" id="backupInfo"></p>
+      <button class="text-btn" data-act="palette">Polecenia</button>
       <button class="text-btn" data-act="theme">Motyw</button>
       <button class="text-btn" id="syncBtn">Synchronizacja</button>
       <button class="text-btn" id="templatesBtn">Szablony</button>
@@ -215,6 +216,16 @@
         <button type="button" class="quick-btn" id="clipboardBtn" aria-label="Nowa notatka ze schowka" title="Nowa notatka ze schowka">📋</button>
       </form>
       <input type="search" id="searchInputMobile" placeholder="Szukaj notatek…" class="search-input mobile-search" aria-label="Szukaj notatek" autocomplete="off">
+      <div class="search-panel" id="searchPanel">
+        <div class="search-filters">
+          <select id="fDate" aria-label="Data zmiany"><option value="any">Kiedykolwiek</option><option value="today">Dziś</option><option value="7">Ostatnie 7 dni</option><option value="30">Ostatnie 30 dni</option></select>
+          <select id="fAccess" aria-label="Dostęp"><option value="any">Wszystkie notatki</option><option value="private">Tylko prywatne</option><option value="shared">Tylko wspólne</option></select>
+          <select id="fScope" aria-label="Zakres"><option value="ws">Ta przestrzeń</option><option value="all">Wszystkie przestrzenie</option></select>
+          <button type="button" class="text-btn" id="saveSearchBtn">☆ Zapisz</button>
+          <button type="button" class="text-btn" id="clearSearchBtn">Wyczyść</button>
+        </div>
+        <div class="search-chips" id="searchChips"></div>
+      </div>
       <div class="active-filters" id="activeFilters"></div>
       <div class="notes-grid" id="notesGrid"></div>
       <div class="empty-state" id="emptyState">
@@ -263,6 +274,9 @@
           </button>
           <button class="icon-btn" id="favoriteBtn" aria-label="Ulubione" title="Ulubione">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </button>
+          <button class="icon-btn" id="focusBtn" aria-label="Tryb Focus" title="Tryb Focus – tylko tytuł i treść">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg>
           </button>
           <button class="icon-btn" id="previewToggle" aria-label="Podgląd" title="Podgląd Markdown">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -344,6 +358,11 @@
       </div>
     </div>
   </main>
+  <div class="focus-bar" id="focusBar" aria-label="Tryb Focus">
+    <button type="button" class="focus-pill" id="focusWidthBtn">Szerokość: średnia</button>
+    <button type="button" class="focus-pill" id="focusFullBtn">Pełny ekran</button>
+    <button type="button" class="focus-pill gold" id="focusExitBtn">Zakończ</button>
+  </div>
   <nav class="tabbar" id="tabbar" aria-label="Nawigacja">
     <button type="button" class="tab" data-go="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg><span>Pulpit</span></button>
     <button type="button" class="tab" data-go="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><span>Notatki</span></button>

@@ -1,7 +1,8 @@
 // Lista notatek: filtrowanie, renderowanie kart, gesty przesunięcia.
 import { state, hooks, wsNotes, folderName, isLive, auraColor } from './state.js';
 import { $, askConfirm } from './ui.js';
-import { escapeHtml, formatDate, plainPreview } from './util.js';
+import { escapeHtml, formatDate, plainPreview, matchesQuery, highlightText, snippetAround } from './util.js';
+import { passesFilters } from './search.js';
 import { persist, trashNote, restoreNote, purgeNote } from './actions.js';
 
 const VIEW_TITLES = { all: 'Wszystkie notatki', recent: 'Ostatnie', favorites: 'Ulubione', journal: 'Dziennik', archive: 'Archiwum', trash: 'Kosz' };
@@ -12,7 +13,10 @@ const EMPTY = {
 
 export function getFilteredNotes() {
   const v = state.currentView;
-  let list = wsNotes().filter((n) => (v === 'trash' ? !!n.deleted : v === 'archive' ? n.archived && !n.deleted : isLive(n)));
+  const everywhere = state.searchFilters.scope === 'all' && (state.searchQuery || v === 'all');
+  const base = everywhere ? state.notes : wsNotes();
+  let list = base.filter((n) => (v === 'trash' ? !!n.deleted : v === 'archive' ? n.archived && !n.deleted : isLive(n)));
+  list = list.filter((n) => passesFilters(n));
   if (state.currentFolder) list = list.filter((n) => n.folder === state.currentFolder);
   if (state.currentTag) {
     const t = state.currentTag.toLowerCase();
@@ -21,8 +25,9 @@ export function getFilteredNotes() {
   if (v === 'favorites') list = list.filter((n) => n.favorite);
   if (v === 'journal') list = list.filter((n) => n.tags.some((t) => t.toLowerCase() === 'dziennik') || n.title.toLowerCase().includes('dziennik'));
   if (state.searchQuery) {
-    const q = state.searchQuery.toLowerCase();
-    list = list.filter((n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q) || n.tags.some((t) => t.toLowerCase().includes(q)));
+    const q = state.searchQuery;
+    const wsName = (id) => (state.workspaces.find((w) => w.id === (id || 'default')) || {}).name;
+    list = list.filter((n) => matchesQuery([n.title, n.content, n.tags.join(' '), folderName(n.folder), ...n.attachments.map((a) => a.name), wsName(n.workspace)], q));
   }
   const cmp = (a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
@@ -72,16 +77,18 @@ export function renderNotes() {
   }
   empty.classList.remove('show');
 
+  const q = state.searchQuery;
   grid.innerHTML = filtered.map((note, i) => `
     <article class="note-card ${note.pinned ? 'pinned' : ''} ${note.deleted ? 'is-trashed' : ''} ${state.editing && state.editing.note.id === note.id ? 'selected' : ''}" data-id="${escapeHtml(note.id)}" tabindex="0" role="button"
       style="${auraColor(note.aura) ? `--card-aura: ${escapeHtml(auraColor(note.aura))}; ` : ''}animation-delay: ${Math.min(i, 12) * 0.03}s">
-      <h3>${escapeHtml(note.title || 'Bez tytułu')}</h3>
-      <p>${escapeHtml(plainPreview(note.content)) || '&nbsp;'}</p>
+      <h3>${q ? highlightText(note.title || 'Bez tytułu', q) : escapeHtml(note.title || 'Bez tytułu')}</h3>
+      <p>${(q ? highlightText(snippetAround(plainPreview(note.content, 100000), q), q) : escapeHtml(plainPreview(note.content))) || '&nbsp;'}</p>
       <div class="note-meta">
         <div class="note-tags">
           ${note.private ? '<span class="mini-tag private-tag" title="Tylko na tym urządzeniu">🔒 Prywatna</span>' : ''}
           ${note.favorite ? '<span class="fav-star" title="Ulubiona">★</span>' : ''}
           ${note.attachments.length ? `<span class="mini-tag" title="Załączniki">📎${note.attachments.length}</span>` : ''}
+          ${state.searchFilters.scope === 'all' && (note.workspace || 'default') !== state.currentWorkspace ? `<span class="mini-tag ws-tag">${escapeHtml((state.workspaces.find((w) => w.id === (note.workspace || 'default')) || {}).name || '')}</span>` : ''}
           ${note.tags.slice(0, 3).map((t) => `<span class="mini-tag">#${escapeHtml(t)}</span>`).join('')}
         </div>
         <span>${note.deleted ? 'usunięto ' : ''}${escapeHtml(formatDate(note.deleted || note.updated))}</span>
