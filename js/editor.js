@@ -22,16 +22,22 @@ export function createDraft(opts = {}) {
   });
 }
 
-export function startNewNote(opts = {}) {
+/** Laptop: lista notatek i notatka obok siebie (trzy kolumny). */
+export const isWide = () => window.matchMedia('(min-width: 1100px)').matches;
+
+export async function startNewNote(opts = {}) {
   hooks.closeSidebar();
+  if (state.editing) await leaveEditor();
   state.editing = { note: createDraft(opts), isNew: true };
   showEditor(true);
 }
 
-export function openNote(id) {
+export async function openNote(id) {
   const note = state.notes.find((n) => n.id === id);
   if (!note) return;
   hooks.closeSidebar();
+  if (state.editing && state.editing.note.id === id) return;
+  if (state.editing) await leaveEditor(); // trzy kolumny: poprzednia notatka zostaje zapisana
   state.editing = { note, isNew: false };
   showEditor(false);
 }
@@ -52,6 +58,7 @@ function showEditor(focusTitle) {
   togglePreview();
   pushScreen('editor');
   setView('editor');
+  if (isWide()) hooks.renderNotes(); // zaznaczenie otwartej notatki na liście
   if (focusTitle) $('noteTitle').focus();
 }
 
@@ -322,7 +329,7 @@ export async function saveCurrentNote({ touch = false } = {}) {
   }
   if (state.editing === ed) {
     hooks.updateTags();
-    if (state.currentScreen !== 'editor') hooks.renderNotes();
+    if (state.currentScreen !== 'editor' || isWide()) hooks.renderNotes();
   }
 }
 

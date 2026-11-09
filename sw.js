@@ -2,15 +2,21 @@
 // Wszystkie aplikacje pod lewym90.github.io dzielą jedną pamięć podręczną i inne aplikacje potrafią ją czyścić.
 // Dlatego: kasujemy wyłącznie własne wpisy (nexus-v*), a pliki mają kopię w osobnej bazie IndexedDB.
 const CACHE_PREFIX = 'nexus-v';
-const CACHE_NAME = CACHE_PREFIX + '9';
+const CACHE_NAME = CACHE_PREFIX + '11';
 const MIRROR_DB = 'nexus-shell';
 const ASSETS = [
   './',
   'index.html',
   'styles.css',
   'js/main.js', 'js/util.js', 'js/storage.js', 'js/ui.js', 'js/state.js', 'js/db.js', 'js/markdown.js', 'js/nav.js',
-  'js/actions.js', 'js/list.js', 'js/sidebar.js', 'js/editor.js', 'js/templates.js', 'js/io.js', 'js/graph.js', 'js/sync.js', 'js/syncui.js',
+  'js/actions.js', 'js/list.js', 'js/sidebar.js', 'js/editor.js', 'js/templates.js', 'js/io.js', 'js/graph.js', 'js/sync.js', 'js/syncui.js', 'js/home.js',
   'manifest.json',
+  'brand/logo.webp',
+  'fonts/inter-latin-wght-normal.woff2', 'fonts/inter-latin-ext-wght-normal.woff2',
+  'fonts/manrope-latin-wght-normal.woff2', 'fonts/manrope-latin-ext-wght-normal.woff2',
+  'fonts/jetbrains-mono-latin-wght-normal.woff2', 'fonts/jetbrains-mono-latin-ext-wght-normal.woff2',
+  'fonts/michroma-latin-400-normal.woff2',
+  'icons/icon-16.png',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png',

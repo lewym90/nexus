@@ -1,0 +1,88 @@
+"""Pulpit, Zadania i dolny pasek (telefon) oraz trzy kolumny (laptop). Uruchom: python tests/home.py"""
+import sys, threading, http.server, os, functools
+from playwright.sync_api import sync_playwright
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+class Q(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *a): pass
+srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(Q, directory=ROOT))
+threading.Thread(target=srv.serve_forever, daemon=True).start()
+URL = f'http://127.0.0.1:{srv.server_address[1]}/'
+res = []
+def check(name, cond, extra=''):
+    res.append((name, bool(cond))); print(('PASS ' if cond else 'FAIL ') + name + (' :: ' + str(extra) if not cond else ''))
+GO = '''t => { const el = [...document.querySelectorAll(`[data-go=${t}]`)].find((e) => { const r = e.getBoundingClientRect(); return r.width && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; }); el.click(); }'''
+def ready(pg): pg.wait_for_selector('body[data-ready="1"]', state='attached'); pg.wait_for_timeout(900)
+def note(pg, title, content):
+    pg.click('#newNoteBtn'); pg.fill('#noteTitle', title); pg.fill('#noteContent', content); pg.wait_for_timeout(900); pg.click('#backBtn'); pg.wait_for_timeout(250)
+
+with sync_playwright() as p:
+    b = p.chromium.launch(**({'executable_path': os.environ['CHROMIUM_PATH']} if os.environ.get('CHROMIUM_PATH') else {}))
+    errs = []
+    # ---------- telefon ----------
+    ctx = b.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
+    pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto(URL); ready(pg)
+    check('start na Pulpicie', pg.is_visible('#homeView') and pg.evaluate('document.body.dataset.screen') == 'home')
+    check('kafelki widoczne', pg.locator('.tile').count() == 4 and pg.is_visible('.tile-gold'))
+    check('dolny pasek widoczny', pg.is_visible('#tabbar'))
+    check('Pulpit aktywny na pasku', pg.evaluate("getComputedStyle(document.querySelector('.tab[data-go=home]')).color") != pg.evaluate("getComputedStyle(document.querySelector('.tab[data-go=notes]')).color"))
+    pg.click('#tileNew'); pg.wait_for_selector('#editorView.active')
+    check('kafelek Nowa notatka otwiera edytor', True)
+    pg.fill('#noteTitle', 'Zakupy'); pg.fill('#noteContent', '- [ ] chleb\n- [ ] masło\n- [x] mleko'); pg.wait_for_timeout(900)
+    check('pasek dostępny w edytorze', pg.is_visible('#tabbar'))
+    pg.click('#backBtn'); pg.wait_for_selector('#homeView.active')
+    check('wstecz wraca na Pulpit', True)
+    check('ostatnie notatki na Pulpicie', pg.locator('#homeRecent .recent-row:has-text("Zakupy")').count() == 1)
+    check('licznik zadań na kafelku', '2' in pg.inner_text('#homeTasksCount'), pg.inner_text('#homeTasksCount'))
+    pg.locator('#homeTasks input[data-text="chleb"]').check(); pg.wait_for_timeout(700)
+    check('odhaczenie zadania z Pulpitu zmienia notatkę', '- [x] chleb' in pg.evaluate('nexus.state.notes.find(n=>n.title==="Zakupy").content'))
+    pg.click('.tile[data-go=tasks]'); pg.wait_for_selector('#tasksView.active')
+    check('widok Zadań: otwarte', pg.locator('#tasksList .task-row').count() == 1 and 'masło' in pg.inner_text('#tasksList'))
+    pg.click('#tasksDoneToggle'); pg.wait_for_timeout(100)
+    check('widok Zadań: z ukończonymi', pg.locator('#tasksList .task-row').count() == 3)
+    pg.click('.task-note'); pg.wait_for_selector('#editorView.active')
+    check('klik w notatkę z zadań otwiera ją', pg.input_value('#noteTitle') == 'Zakupy')
+    pg.click('#backBtn'); pg.wait_for_selector('#tasksView.active')
+    pg.evaluate(GO, 'notes'); pg.wait_for_selector('#notesView.active')
+    check('pasek: Notatki', pg.locator('.note-card').count() == 1)
+    pg.evaluate(GO, 'search'); pg.wait_for_timeout(200)
+    check('pasek: Szukaj ustawia kursor w wyszukiwarce', pg.evaluate('document.activeElement.id') == 'searchInputMobile')
+    pg.evaluate(GO, 'graph'); pg.wait_for_selector('#graphView.active')
+    check('pasek: Graf', True)
+    pg.evaluate(GO, 'more'); pg.wait_for_timeout(400)
+    check('pasek: Więcej otwiera menu', pg.evaluate("document.getElementById('sidebar').classList.contains('open')"))
+    pg.click('#sidebarBackdrop', position={'x': 380, 'y': 300}); pg.wait_for_timeout(300)
+    pg.evaluate(GO, 'home'); pg.wait_for_selector('#homeView.active')
+    pg.click('#tileJournal'); pg.wait_for_selector('#editorView.active')
+    check('kafelek Dziennik tworzy wpis na dziś', pg.input_value('#noteTitle').startswith('Dziennik '))
+    pg.wait_for_timeout(900); pg.click('#backBtn'); pg.wait_for_timeout(300)
+    check('projekty ukryte bez przestrzeni', not pg.is_visible('#homeProjectsCard'))
+    pg.evaluate("(async () => { const m = await import('./js/sidebar.js'); })()")
+    pg.evaluate("nexus.state.workspaces.push({id:'w2',name:'Praca'}); nexus.hooks.renderAll()"); pg.wait_for_timeout(100)
+    pg.evaluate(GO, 'home'); pg.wait_for_timeout(200)
+    check('projekty = przestrzenie poza domyślną', pg.locator('#homeProjects .project-chip:has-text("Praca")').count() == 1)
+    pg.click('#homeProjects .project-chip'); pg.wait_for_selector('#notesView.active')
+    check('klik w projekt przełącza przestrzeń', pg.evaluate('nexus.state.currentWorkspace') == 'w2')
+    pg.reload(); ready(pg)
+    check('po restarcie znów Pulpit', pg.is_visible('#homeView'))
+    ctx.close()
+    # ---------- laptop ----------
+    ctx = b.new_context(viewport={'width': 1440, 'height': 900})
+    pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto(URL); ready(pg)
+    check('laptop: bez dolnego paska', not pg.is_visible('#tabbar'))
+    note(pg, 'A', 'tekst A'); note(pg, 'B', 'tekst B')
+    pg.click('.nav-item[data-view=all]'); pg.wait_for_selector('#notesView.active')
+    check('laptop: pusta kolumna notatki', pg.is_visible('#editorPlaceholder'))
+    pg.locator('.note-card:has-text("A")').first.click(); pg.wait_for_selector('#editorView.active')
+    pg.fill('#noteContent', 'zmiana A')
+    pg.locator('.note-card:has-text("B")').first.click(); pg.wait_for_timeout(300)
+    check('laptop: przełączenie notatek zapisuje poprzednią', pg.evaluate('nexus.state.notes.find(n=>n.title==="A").content') == 'zmiana A')
+    check('laptop: lista obok notatki', pg.is_visible('#notesView') and pg.input_value('#noteTitle') == 'B')
+    l = pg.evaluate("document.getElementById('notesView').getBoundingClientRect().right"); r = pg.evaluate("document.getElementById('editorView').getBoundingClientRect().left")
+    check('laptop: kolumny nie nachodzą', l <= r + 1, (l, r))
+    check('brak błędów JS', not errs, errs)
+    b.close()
+f = [n for n, ok in res if not ok]
+print(f'\n{len(res) - len(f)}/{len(res)} passed'); print('FAILED:', f)
+sys.exit(1 if f else 0)

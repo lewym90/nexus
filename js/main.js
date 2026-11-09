@@ -1,6 +1,6 @@
 // Punkt wejścia: inicjalizacja, spinanie zdarzeń, parametry uruchomienia (skróty / udostępnianie).
-import { state, hooks } from './state.js';
-import { $, isMobile, showToast, closeModal, isModalOpen, askConfirm } from './ui.js';
+import { state, hooks, wsNotes, isLive } from './state.js';
+import { $, isMobile, showToast, closeModal, isModalOpen, askConfirm, openModal } from './ui.js';
 import { readLS, LS } from './storage.js';
 import { initDB, loadNotes, migrateLegacyAttachments, revokeAllBlobURLs } from './db.js';
 import { findNoteByTitle } from './state.js';
@@ -20,20 +20,61 @@ import { loadTemplates, openTemplatePicker, saveAsTemplate, applyTemplateVars } 
 import { exportData, importData, renderBackup, snoozeBackup } from './io.js';
 import { initSync, isPaired } from './sync.js';
 import { openSyncPanel } from './syncui.js';
+import { renderHome, renderTasks, setupHomeInteractions, collectTasks } from './home.js';
+
 import { initGraph, rebuildGraph, drawGraph, getGraph } from './graph.js';
 import { emptyTrash, purgeExpired, purgeNote, createQuickNote, createNoteFrom } from './actions.js';
 
 /* ---------- Ustawienia / motyw ---------- */
 
+const THEMES = [
+  { id: 'auto', label: 'Automatyczny', hint: 'jak w systemie: jasny w dzień, ciemny wieczorem', swatch: 'linear-gradient(90deg, #f4f3ef 50%, #0d1117 50%)' },
+  { id: 'dark', label: 'Ciemny premium', hint: '', swatch: '#0d1117' },
+  { id: 'light', label: 'Jasny premium', hint: '', swatch: '#f4f3ef' },
+  { id: 'oled', label: 'Czarny OLED', hint: 'oszczędza baterię na ekranach OLED', swatch: '#000' }
+];
+const systemDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+const resolvedTheme = () => (state.theme === 'auto' ? (systemDark && !systemDark.matches ? 'light' : 'dark') : state.theme);
+
+/** Klasa motywu trafia na <html> i <body>: tło dokumentu (także pod paskami systemu) ma kolor motywu. */
 function applyTheme() {
-  document.body.classList.toggle('light', state.theme === 'light');
+  const t = resolvedTheme();
+  for (const el of [document.documentElement, document.body]) {
+    el.classList.toggle('light', t === 'light');
+    el.classList.toggle('oled', t === 'oled');
+  }
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = state.theme === 'light' ? '#f5f6f8' : '#0c0e12';
+  if (meta) meta.content = { light: '#f4f3ef', oled: '#000000' }[t] || '#0d1117';
+  if (state.currentScreen === 'graph') drawGraph();
+}
+if (systemDark) systemDark.addEventListener('change', () => { if (state.theme === 'auto') applyTheme(); });
+
+function chooseTheme() {
+  const list = document.createElement('div');
+  list.className = 'choice-list theme-choice';
+  THEMES.forEach((t) => {
+    const row = document.createElement('div');
+    row.className = 'choice' + (state.theme === t.id ? ' current' : '');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'choice-main';
+    b.dataset.theme = t.id;
+    b.innerHTML = `<span class="swatch" style="background:${t.swatch}"></span><span><strong>${t.label}</strong>${t.hint ? `<br><small class="muted">${t.hint}</small>` : ''}</span>`;
+    b.addEventListener('click', () => {
+      state.theme = t.id;
+      applyTheme();
+      saveSettings();
+      closeModal(null);
+    });
+    row.appendChild(b);
+    list.appendChild(row);
+  });
+  openModal({ title: 'Motyw', content: list, actions: [{ label: 'Zamknij', value: null }] });
 }
 
 function loadSettings() {
   const s = readLS(LS.settings, {});
-  state.theme = s.theme === 'light' ? 'light' : 'dark';
+  state.theme = s.themeV === 2 && ['auto', 'dark', 'light', 'oled'].includes(s.theme) ? s.theme : 'auto';
   state.currentLayout = s.layout === 'list' ? 'list' : 'grid';
   state.currentSort = ['updated', 'created', 'title'].includes(s.sort) ? s.sort : 'updated';
   state.currentWorkspace = typeof s.workspace === 'string' ? s.workspace : 'default';
@@ -62,9 +103,35 @@ function renderAll() {
   updateFolderSelect();
   renderNotes();
   renderBackup();
+  renderNavCounts();
+  if (state.currentScreen === 'home') renderHome();
+  if (state.currentScreen === 'tasks') renderTasks();
 }
 
-Object.assign(hooks, { isPaired, syncStatus: renderBackup, renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
+function renderNavCounts() {
+  const live = wsNotes().filter(isLive);
+  const counts = {
+    all: live.length,
+    recent: Math.min(live.length, 30),
+    favorites: live.filter((n) => n.favorite).length,
+    journal: live.filter((n) => n.tags.some((t) => t.toLowerCase() === 'dziennik') || n.title.toLowerCase().includes('dziennik')).length,
+    archive: wsNotes().filter((n) => n.archived && !n.deleted).length,
+    tasks: collectTasks(live).filter((t) => !t.done).length
+  };
+  document.querySelectorAll('[data-count]').forEach((el) => { const c = counts[el.dataset.count]; el.textContent = c ? String(c) : ''; });
+}
+
+/** Ikonka chmury w nagłówku: zielona = zsynchronizowano, czerwona = problem, szara = brak serwera. */
+function updateSyncStatus() {
+  renderBackup();
+  const sync = readLS(LS.sync, null);
+  const dot = $('syncDot');
+  dot.className = 'status-dot ' + (!sync ? 'off' : sync.error ? 'err' : 'ok');
+  $('syncStatusBtn').title = !sync ? 'Synchronizacja wyłączona' : sync.error ? 'Synchronizacja: ' + sync.error : 'Zsynchronizowano';
+  if (state.currentScreen === 'home') renderHome();
+}
+
+Object.assign(hooks, { isPaired, syncStatus: updateSyncStatus, switchWorkspace, renderAll, renderNotes, updateTags, updateFolderSelect, closeSidebar, redrawGraph: drawGraph });
 registerEditorHooks();
 
 /* ---------- Nowe notatki ---------- */
@@ -95,6 +162,31 @@ async function pasteFromClipboard() {
   } catch {
     showToast('Brak dostępu do schowka – wklej tekst w polu szybkiej notatki');
     $('quickInput').focus();
+  }
+}
+
+async function showScreen(screen, render) {
+  closeSidebar();
+  if (state.currentScreen === screen) { render(); return; }
+  if (state.currentScreen === 'editor') await leaveEditor();
+  pushScreen(screen);
+  setView(screen);
+  render();
+}
+const showHome = () => showScreen('home', () => { renderNavCounts(); renderHome(); });
+const showTasks = () => showScreen('tasks', renderTasks);
+
+/** Przyciski z data-go: dolny pasek, kafelki Pulpitu, menu boczne. */
+async function go(target) {
+  if (target === 'home') return showHome();
+  if (target === 'tasks') return showTasks();
+  if (target === 'graph') return showGraph();
+  if (target === 'more') return toggleSidebar();
+  if (target === 'notes' || target === 'search') {
+    closeSidebar();
+    if (target === 'notes') { setNavView('all'); state.currentFolder = null; state.currentTag = null; }
+    if (state.currentScreen !== 'notes') { pushScreen('notes'); await showNotes(); } else renderAll();
+    if (target === 'search') (isMobile() ? $('searchInputMobile') : $('searchInput')).focus();
   }
 }
 
@@ -193,15 +285,24 @@ function setupEventListeners() {
   $('searchInputMobile').addEventListener('input', onSearch);
 
   // nawigacja boczna
-  document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click', async () => {
+  document.querySelectorAll('.nav-item[data-view]').forEach((item) => item.addEventListener('click', async () => {
     setNavView(item.dataset.view);
     state.currentFolder = null;
     state.currentTag = null;
     state.animateNext = true;
     closeSidebar();
-    if (state.currentScreen !== 'notes') await showNotes();
+    if (state.currentScreen !== 'notes') { pushScreen('notes'); await showNotes(); }
     renderAll();
   }));
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-go]');
+    if (t) { e.preventDefault(); go(t.dataset.go); return; }
+    if (e.target.closest('[data-act="theme"]')) { closeSidebar(); chooseTheme(); }
+  });
+  $('tileNew').addEventListener('click', async () => { setNavView('all'); await onNewNote(); });
+  $('tileJournal').addEventListener('click', async () => { setNavView('journal'); await onNewNote(); });
+  $('syncStatusBtn').addEventListener('click', () => openSyncPanel(initSync));
+  setupHomeInteractions();
   $('emptyTrashBtn').addEventListener('click', emptyTrash);
 
   $('foldersList').addEventListener('click', async (e) => {
@@ -252,14 +353,7 @@ function setupEventListeners() {
 
   $('menuToggle').addEventListener('click', toggleSidebar);
   $('sidebarBackdrop').addEventListener('click', closeSidebar);
-  $('themeToggle').addEventListener('click', () => {
-    state.theme = state.theme === 'light' ? 'dark' : 'light';
-    applyTheme();
-    saveSettings();
-    if (state.currentScreen === 'graph') drawGraph();
-  });
 
-  $('graphBtn').addEventListener('click', showGraph);
   $('closeGraphBtn').addEventListener('click', goBack);
   $('exportBtn').addEventListener('click', exportData);
   $('backupNowBtn').addEventListener('click', exportData);
@@ -274,6 +368,7 @@ function setupEventListeners() {
     if (state.currentScreen === 'editor') await leaveEditor();
     if (screen === 'editor') screen = 'notes';
     if (screen === 'graph') { setView('graph'); rebuildGraph(''); }
+    else if (screen === 'home' || screen === 'tasks') { setView(screen); renderAll(); }
     else { setView('notes'); renderAll(); }
   });
 
@@ -352,9 +447,12 @@ function setupViewportSync() {
   window.addEventListener('orientationchange', () => { baseH = window.innerHeight; sync(); });
 }
 
+const splashShown = performance.now();
 function hideSplash() {
   const s = $('splash');
   if (!s) return;
+  const wait = 700 - (performance.now() - splashShown); // znak marki zdąży się pokazać, ale start nie jest wstrzymywany
+  if (wait > 0) { setTimeout(hideSplash, wait); return; }
   s.classList.add('hide');
   setTimeout(() => s.remove(), 400);
 }
@@ -368,8 +466,12 @@ async function init() {
   try { await migrateLegacyAttachments(state.notes); } catch (e) { console.error('Migracja załączników:', e); }
   try { await purgeExpired(); } catch (e) { console.error(e); }
   setupEventListeners();
-  try { history.replaceState(null, ''); } catch { /* ignoruj */ }
+  // Start: Pulpit (testy i ustawienie mogą wybrać listę notatek)
+  const start = (() => { try { return localStorage.getItem('nexus-start') === 'notes' ? 'notes' : 'home'; } catch { return 'home'; } })();
+  setView(start);
+  try { history.replaceState({ screen: start }, ''); } catch { /* ignoruj */ }
   renderAll();
+  updateSyncStatus();
   if (!state.dbOk) showToast('Pamięć lokalna niedostępna – notatki nie zostaną zachowane (tryb prywatny?)');
   if (state.dbOk && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   await handleLaunchParams();

@@ -1,5 +1,5 @@
 // Lista notatek: filtrowanie, renderowanie kart, gesty przesunięcia.
-import { state, hooks, wsNotes, folderName, isLive } from './state.js';
+import { state, hooks, wsNotes, folderName, isLive, auraColor } from './state.js';
 import { $, askConfirm } from './ui.js';
 import { escapeHtml, formatDate, plainPreview } from './util.js';
 import { persist, trashNote, restoreNote, purgeNote } from './actions.js';
@@ -73,8 +73,8 @@ export function renderNotes() {
   empty.classList.remove('show');
 
   grid.innerHTML = filtered.map((note, i) => `
-    <article class="note-card ${note.pinned ? 'pinned' : ''} ${note.deleted ? 'is-trashed' : ''}" data-id="${escapeHtml(note.id)}" tabindex="0" role="button"
-      style="--card-aura: ${escapeHtml(note.aura)}; animation-delay: ${Math.min(i, 12) * 0.03}s">
+    <article class="note-card ${note.pinned ? 'pinned' : ''} ${note.deleted ? 'is-trashed' : ''} ${state.editing && state.editing.note.id === note.id ? 'selected' : ''}" data-id="${escapeHtml(note.id)}" tabindex="0" role="button"
+      style="${auraColor(note.aura) ? `--card-aura: ${escapeHtml(auraColor(note.aura))}; ` : ''}animation-delay: ${Math.min(i, 12) * 0.03}s">
       <h3>${escapeHtml(note.title || 'Bez tytułu')}</h3>
       <p>${escapeHtml(plainPreview(note.content)) || '&nbsp;'}</p>
       <div class="note-meta">

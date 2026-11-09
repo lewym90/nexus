@@ -1,7 +1,7 @@
 // Drobne elementy interfejsu: skrót DOM, toast (z akcją „Cofnij”), okna dialogowe.
 
 export const $ = (id) => document.getElementById(id);
-export const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
+export const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
 
 let toastTimer;
 /** showToast('tekst') lub showToast('tekst', { label: 'Cofnij', onClick }) */
