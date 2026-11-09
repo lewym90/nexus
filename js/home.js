@@ -57,7 +57,9 @@ export function renderHome() {
 
   const live = wsNotes().filter(isLive);
   const open = collectTasks(live).filter((t) => !t.done);
-  $('homeTasksCount').textContent = open.length ? `${open.length} ${plural(open.length, 'otwarte', 'otwarte', 'otwartych')}` : 'Wszystko zrobione';
+  const badge = $('homeTasksCount');
+  badge.textContent = open.length > 99 ? '99+' : open.length ? String(open.length) : '';
+  badge.title = open.length ? `${open.length} ${plural(open.length, 'otwarte zadanie', 'otwarte zadania', 'otwartych zadań')}` : '';
 
   const recent = [...live].sort((a, b) => b.updated - a.updated).slice(0, 5);
   $('homeRecent').innerHTML = recent.length ? recent.map((n) => `

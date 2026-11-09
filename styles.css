@@ -977,7 +977,12 @@ body[data-screen="home"] .nav-item.active[data-view], body[data-screen="tasks"] 
   font: 600 0.95rem var(--font);
 }
 .tile svg { width: 34px; height: 34px; }
-.tile small { position: absolute; top: 10px; right: 12px; font-size: 0.68rem; font-weight: 600; color: var(--accent); }
+.tile small {
+  position: absolute; top: 10px; right: 10px; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 999px;
+  display: grid; place-items: center; font: 700 0.75rem var(--font); color: var(--on-accent);
+  background: var(--gold-grad); box-shadow: 0 0 12px rgba(224, 176, 79, 0.45);
+}
+.tile small:empty { display: none; }
 .tile:hover { transform: translateY(-2px); border-color: var(--border-gold); }
 .tile:active { transform: scale(0.98); }
 .tile-gold {

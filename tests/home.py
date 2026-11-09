@@ -33,7 +33,7 @@ with sync_playwright() as p:
     pg.click('#backBtn'); pg.wait_for_selector('#homeView.active')
     check('wstecz wraca na Pulpit', True)
     check('ostatnie notatki na Pulpicie', pg.locator('#homeRecent .recent-row:has-text("Zakupy")').count() == 1)
-    check('licznik zadań na kafelku', '2' in pg.inner_text('#homeTasksCount'), pg.inner_text('#homeTasksCount'))
+    check('licznik zadań na kafelku', pg.inner_text('#homeTasksCount') == '2', pg.inner_text('#homeTasksCount'))
     pg.locator('#homeTasks input[data-text="chleb"]').check(); pg.wait_for_timeout(700)
     check('odhaczenie zadania z Pulpitu zmienia notatkę', '- [x] chleb' in pg.evaluate('nexus.state.notes.find(n=>n.title==="Zakupy").content'))
     pg.click('.tile[data-go=tasks]'); pg.wait_for_selector('#tasksView.active')
