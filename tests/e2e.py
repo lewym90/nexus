@@ -50,7 +50,7 @@ def features(pg,ctx,kind,K):
     check(K+'undo restores trashed note',pg.locator('.note-card:has(h3:has-text("Spotkanie"))').count()==1)
     menu(pg,kind,False)
     pg.locator('.note-card:has(h3:has-text("Spotkanie"))').click(); pg.wait_for_selector('#editorView.active')
-    pg.click('#deleteBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(300)
+    pg.click('#noteMenuBtn'); pg.click('#deleteBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(300)
     check(K+'trashed note hidden from All',pg.locator('.note-card:has(h3:has-text("Spotkanie"))').count()==0)
     nav(pg,kind,'trash')
     check(K+'trash view lists it',pg.locator('.note-card').count()==1 and pg.is_visible('#emptyTrashBtn'))
@@ -64,14 +64,14 @@ def features(pg,ctx,kind,K):
     check(K+'restored note back in All',pg.locator('.note-card:has(h3:has-text("Spotkanie"))').count()==1)
     # trwałe usunięcie z potwierdzeniem
     pg.locator('.note-card:has(h3:has-text("Spotkanie"))').click(); pg.wait_for_selector('#editorView.active')
-    pg.click('#deleteBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(200)
+    pg.click('#noteMenuBtn'); pg.click('#deleteBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(200)
     nav(pg,kind,'trash'); pg.locator('.note-card').click(); pg.wait_for_selector('#editorView.active')
     pg.click('#purgeBtn'); pg.wait_for_selector('.modal'); pg.click('.modal .modal-btn.danger'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(300)
     check(K+'purge removes permanently',pg.evaluate('nexus.state.notes.filter(n=>n.title==="Spotkanie").length')==0)
     # opróżnij kosz
     nav(pg,kind,'all'); make_note(pg,kind,'Do kosza 1','x'); make_note(pg,kind,'Do kosza 2','y')
     for ttl in ['Do kosza 1','Do kosza 2']:
-        menu(pg,kind,False); pg.locator(f'.note-card:has(h3:has-text("{ttl}"))').click(); pg.wait_for_selector('#editorView.active'); pg.click('#deleteBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(200)
+        menu(pg,kind,False); pg.locator(f'.note-card:has(h3:has-text("{ttl}"))').click(); pg.wait_for_selector('#editorView.active'); pg.click('#noteMenuBtn'); pg.click('#deleteBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(200)
     nav(pg,kind,'trash')
     check(K+'two in trash',vis_cards(pg)==2)
     pg.click('#emptyTrashBtn'); pg.wait_for_selector('.modal'); pg.click('.modal .modal-btn.danger'); pg.wait_for_timeout(400)
@@ -85,12 +85,12 @@ def features(pg,ctx,kind,K):
     # ---- archiwum
     make_note(pg,kind,'Do archiwum','a')
     menu(pg,kind,False); pg.locator('.note-card:has(h3:has-text("Do archiwum"))').click(); pg.wait_for_selector('#editorView.active')
-    pg.click('#archiveBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(300)
+    pg.click('#noteMenuBtn'); pg.click('#archiveBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(300)
     check(K+'archived hidden from All',pg.locator('.note-card:has(h3:has-text("Do archiwum"))').count()==0)
     nav(pg,kind,'archive')
     check(K+'archive view lists it',pg.locator('.note-card:has(h3:has-text("Do archiwum"))').count()==1)
     check(K+'archived excluded from graph/tags data',pg.evaluate('nexus.state.notes.find(n=>n.title==="Do archiwum").archived')==True)
-    pg.locator('.note-card').click(); pg.wait_for_selector('#editorView.active'); pg.click('#archiveBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(300)
+    pg.locator('.note-card').click(); pg.wait_for_selector('#editorView.active'); pg.click('#noteMenuBtn'); pg.click('#archiveBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(300)
     nav(pg,kind,'all')
     check(K+'unarchived back in All',pg.locator('.note-card:has(h3:has-text("Do archiwum"))').count()==1)
 
@@ -317,7 +317,7 @@ def run(kind):
 
         # favorite + pin in editor
         menu(pg,kind,False); pg.locator('.note-card').nth(1).click(); pg.wait_for_selector('#editorView.active')
-        pg.click('#favoriteBtn'); pg.click('#pinBtn'); pg.wait_for_timeout(200)
+        pg.click('#noteMenuBtn'); pg.click('#favoriteBtn'); pg.click('#noteMenuBtn'); pg.click('#pinBtn'); pg.wait_for_timeout(200)
         menu(pg,kind,False); pg.click('#backBtn'); pg.wait_for_selector('#notesView.active')
         check(K+'pinned first + star',pg.locator('.note-card').first.get_attribute('class').find('pinned')>=0 and pg.locator('.fav-star').count()==1)
         menu(pg,kind,True)
@@ -351,15 +351,15 @@ def run(kind):
         # workspaces
         menu(pg,kind,True)
         menu(pg,kind,True); pg.click('#newWorkspaceBtn'); pg.wait_for_selector('.modal'); pg.fill('.modal-input','Dom'); pg.press('.modal-input','Enter'); pg.wait_for_timeout(300)
-        check(K+'workspace created & switched',pg.locator('.note-card').count()==0 and 'Dom' in pg.inner_text('#workspaceSelectSide'))
+        check(K+'workspace created & switched',pg.locator('.note-card').count()==0 and pg.locator('.ws-item.active:has-text("Dom")').count()==1)
         menu(pg,kind,True)
         menu(pg,kind,False); pg.click('#newNoteBtn'); pg.wait_for_selector('#editorView.active'); pg.fill('#noteTitle','Notatka domowa'); pg.wait_for_timeout(1100)
         menu(pg,kind,False); pg.click('#backBtn'); pg.wait_for_selector('#notesView.active')
         check(K+'note in new workspace',pg.locator('.note-card').count()==1)
         menu(pg,kind,True)
-        menu(pg,kind,True); pg.select_option('#workspaceSelectSide' if kind=='mobile' else '#workspaceSelect',label='Główna'); pg.wait_for_timeout(300)
+        menu(pg,kind,True); pg.click('.ws-item:has-text("Główna")'); pg.wait_for_timeout(300)
         check(K+'switch back, 2 notes',pg.locator('.note-card').count()==2)
-        menu(pg,kind,True); pg.select_option('#workspaceSelectSide' if kind=='mobile' else '#workspaceSelect',label='Dom'); pg.wait_for_timeout(300)
+        menu(pg,kind,True); pg.click('.ws-item:has-text("Dom")'); pg.wait_for_timeout(300)
         menu(pg,kind,True)
         menu(pg,kind,True); pg.click('#deleteWorkspaceBtn'); pg.wait_for_selector('.modal'); pg.click('.modal .modal-btn.danger'); pg.wait_for_timeout(400)
         check(K+'workspace deleted, notes moved to Główna',pg.locator('.note-card').count()==3,pg.locator('.note-card').count())
@@ -399,7 +399,7 @@ def run(kind):
         pg.click('#saveTemplateBtn'); pg.wait_for_selector('.modal'); pg.fill('.modal-input','Mój szablon'); pg.press('.modal-input','Enter'); pg.wait_for_timeout(200)
         check(K+'template saved','Mój szablon' in json.loads(pg.evaluate('localStorage.getItem("nexus-templates")'))[-1]['name'])
         # delete note
-        pg.click('#deleteBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_selector('.toast.show .toast-action')
+        pg.click('#noteMenuBtn'); pg.click('#deleteBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_selector('.toast.show .toast-action')
         pg.wait_for_timeout(1500)
         check(K+'deleted note stays deleted (no resurrection)',pg.locator('.note-card:has-text("Spotkanie")').count()==0)
         features(pg,ctx,kind,K)

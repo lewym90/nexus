@@ -636,7 +636,7 @@ body.sidebar-collapsed .main-content { left: 0; }
 .mini-btn:hover { background: var(--bg-glass); color: var(--text); }
 
 /* ---------- Form controls ---------- */
-.workspace-select, .sort-select, #folderSelect {
+.workspace-select, .sort-select, #folderSelect, #noteWsSelect {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   color: var(--text);
@@ -928,7 +928,7 @@ html:not(.light) body { background: radial-gradient(120% 60% at 50% -10%, #171a2
 .modal-btn { border-radius: 12px; }
 .seg { border-radius: 12px; background: var(--bg-elevated); }
 .view-btn { border-radius: 9px; }
-.workspace-select, .sort-select, #folderSelect { border-radius: 12px; padding: 9px 12px; background: var(--panel), var(--bg-elevated); }
+.workspace-select, .sort-select, #folderSelect, #noteWsSelect { border-radius: 12px; padding: 9px 12px; background: var(--panel), var(--bg-elevated); }
 .quick-input, .tags-input-wrapper input, .modal-input { border-radius: 14px; }
 .quick-btn { border-radius: 14px; background: var(--panel), var(--bg-elevated); }
 .tag-pill { border-radius: 999px; padding: 5px 11px; }
@@ -1187,3 +1187,84 @@ html.kb-text body.focus .focus-bar { display: none; }
 .pal-empty { color: var(--text-muted); padding: 18px; text-align: center; }
 .pal-foot { border-top: 1px solid var(--border); padding: 9px 16px; color: var(--text-muted); font-size: 0.75rem; }
 @media (max-width: 767px) { .pal-foot { display: none; } .pal-search input { font-size: 16px; } }
+
+/* =====================================================================
+   Czytelność: przyciski z podpisami, menu notatki, zaznaczanie wielu
+   ===================================================================== */
+.pill-btn {
+  display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px; flex: none;
+  border-radius: 12px; border: 1px solid var(--border); background: var(--panel), var(--bg-elevated);
+  color: var(--text); font: 600 0.86rem var(--font); cursor: pointer; white-space: nowrap;
+}
+.pill-btn svg { width: 18px; height: 18px; flex: none; }
+.pill-btn:hover { border-color: var(--border-gold); }
+.pill-btn.on-accent { border-color: var(--border-gold); color: var(--accent-strong); background: var(--gold-soft); }
+.pill-btn.gold { background: var(--gold-grad); color: var(--on-accent); border-color: transparent; }
+.pill-btn.danger { color: var(--danger); }
+.pill-btn:disabled { opacity: 0.4; cursor: default; }
+.editor-actions { gap: 8px; }
+.private-chip { font-size: 0.75rem; font-weight: 600; color: var(--gold); border: 1px solid var(--border-gold); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.menu-wrap { position: relative; }
+.note-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; width: min(320px, calc(100vw - 24px));
+  background: var(--panel), var(--bg-elevated); border: 1px solid var(--border); border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), var(--panel-shadow); padding: 6px; animation: fadeIn 0.12s ease;
+}
+.note-menu[hidden] { display: none; }
+.menu-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 12px 12px; border: none; background: none; border-radius: 12px; color: var(--text); font: 500 0.95rem var(--font); cursor: pointer;
+}
+.menu-item svg { width: 20px; height: 20px; flex: none; color: var(--text-muted); }
+.menu-item:hover { background: rgba(255, 255, 255, 0.05); }
+.menu-item.on-gold svg, .menu-item.on-accent svg { color: var(--accent); }
+.menu-item.danger, .menu-item.danger svg { color: var(--danger); }
+.menu-item.danger { border-top: 1px solid var(--border); border-radius: 0 0 12px 12px; margin-top: 4px; }
+
+/* pasek formatowania: podpisy i podpowiedź, że da się przewinąć */
+.md-toolbar button { white-space: nowrap; font-size: 0.82rem; gap: 6px; display: inline-flex; align-items: center; }
+.editor-body { position: relative; }
+.md-toolbar { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+
+/* przestrzenie jako lista w menu bocznym */
+.ws-list { display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px; }
+.ws-item .ws-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-section .inline-actions { padding: 0 2px; }
+
+/* podpisy w nagłówku na szerokich ekranach */
+.hdr-lbl { display: none; }
+@media (min-width: 1200px) {
+  #syncStatusBtn, #themeToggle, #graphBtn { width: auto; padding: 0 12px; gap: 8px; }
+  .hdr-lbl { display: inline; font: 600 0.85rem var(--font); color: var(--text-muted); }
+  #syncStatusBtn .status-dot { left: 26px; right: auto; }
+}
+
+/* zaznaczanie wielu notatek */
+.select-bar { display: none; }
+body.selecting .select-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center;
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 97;
+  bottom: calc(var(--tabbar-h, 0px) + 14px); width: min(760px, calc(100% - 20px));
+  padding: 10px 12px; border-radius: 20px; border: 1px solid var(--border-gold);
+  background: rgba(14, 16, 21, 0.94); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: var(--glow);
+}
+.light body.selecting .select-bar, body.selecting.light .select-bar { background: rgba(255, 255, 255, 0.95); }
+#selectCount { font-weight: 700; margin-right: auto; padding-left: 4px; }
+body.selecting .new-note-btn { display: none; }
+body.selecting .note-card { padding-left: 52px; }
+body.selecting .note-card::after {
+  content: ''; position: absolute; left: 16px; top: 20px; width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--text-muted); background: none;
+}
+body.selecting .note-card.is-selected { border-color: var(--border-gold); box-shadow: var(--glow); }
+body.selecting .note-card.is-selected::after { background: var(--gold-grad) center / 100% no-repeat; border-color: transparent; box-shadow: 0 0 10px rgba(224, 176, 79, 0.5); content: '✓'; color: var(--on-accent); font: 800 0.8rem/22px var(--font); text-align: center; }
+body.selecting .note-card.pinned::after { width: 22px; height: 22px; } /* znacznik przypięcia ustępuje polu zaznaczenia */
+body.selecting #notesGrid { padding-bottom: 110px; }
+@media (max-width: 767px) {
+  /* wstecz i przyciski w jednym wierszu, tytuł pod nimi */
+  .editor-header .editor-actions { flex: 1; justify-content: flex-end; flex-wrap: nowrap; min-width: 0; margin-left: 0; }
+  .editor-actions .save-status { margin-right: auto; overflow: hidden; text-overflow: ellipsis; }
+  .editor-actions .private-chip { display: none; }
+  body.selecting .select-bar { justify-content: flex-start; }
+  #selectCount { width: 100%; }
+}

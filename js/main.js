@@ -14,10 +14,11 @@ import {
 import {
   registerEditorHooks, startNewNote, openNote, leaveEditor, saveCurrentNote, deleteCurrentNote, restoreCurrentNote, toggleArchiveCurrent,
   toggleFlag, togglePreview, onPreviewClick, setupTaskDrag, scheduleSave, onContentChanged, applyMarkdown, handleEditorKeys,
-  addAttachments, showAttachment, openBacklink, setAuraFromUI, revealCaret, setNotePrivate
+  addAttachments, showAttachment, openBacklink, setAuraFromUI, revealCaret, setNotePrivate, moveCurrentNote
 } from './editor.js';
 import { loadTemplates, openTemplatePicker, saveAsTemplate, applyTemplateVars } from './templates.js';
 import { exportData, importData, renderBackup, snoozeBackup } from './io.js';
+import { setupSelection } from './select.js';
 import { initSync, isPaired } from './sync.js';
 import { openSyncPanel } from './syncui.js';
 import { renderHome, renderTasks, setupHomeInteractions, collectTasks } from './home.js';
@@ -51,6 +52,30 @@ function applyTheme() {
   if (state.currentScreen === 'graph') drawGraph();
 }
 if (systemDark) systemDark.addEventListener('change', () => { if (state.theme === 'auto') applyTheme(); });
+
+/** Wybór przestrzeni w oknie: zwraca id albo null. Brak innych przestrzeni = podpowiedź, jak je założyć. */
+export async function chooseWorkspace(title, current) {
+  const others = state.workspaces.filter((w) => w.id !== current);
+  if (!others.length) {
+    await openModal({ title, message: 'Masz tylko jedną przestrzeń. Nową założysz w menu: Przestrzenie → „+ Nowa przestrzeń”.', actions: [{ label: 'OK', value: null, kind: 'primary' }] });
+    return null;
+  }
+  const list = document.createElement('div');
+  list.className = 'choice-list';
+  others.forEach((w) => {
+    const row = document.createElement('div');
+    row.className = 'choice';
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'choice-main';
+    b.dataset.ws = w.id;
+    b.textContent = w.name;
+    b.addEventListener('click', () => closeModal(w.id));
+    row.appendChild(b);
+    list.appendChild(row);
+  });
+  return openModal({ title, content: list, actions: [{ label: 'Anuluj', value: null }] });
+}
 
 function chooseTheme() {
   const list = document.createElement('div');
@@ -308,6 +333,15 @@ function setupEventListeners() {
   setupHomeInteractions();
   setupSearch();
   setupFocus();
+  setupSelection();
+  // menu notatki „Więcej”: pełne nazwy zamiast samych ikonek
+  const menu = $('noteMenu'), menuBtn = $('noteMenuBtn');
+  const closeMenu = () => { menu.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); };
+  menuBtn.addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; menuBtn.setAttribute('aria-expanded', String(!menu.hidden)); });
+  menu.addEventListener('click', (e) => { if (e.target.closest('.menu-item')) setTimeout(closeMenu, 0); });
+  document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !e.target.closest('.menu-wrap')) closeMenu(); });
+  $('moveBtn').addEventListener('click', () => chooseWorkspace('Przenieś notatkę do przestrzeni', state.editing && (state.editing.note.workspace || state.currentWorkspace)).then((id) => id && moveCurrentNote(id)));
+  $('noteWsSelect').addEventListener('change', (e) => moveCurrentNote(e.target.value));
   registerCommands([
     { label: 'Nowa notatka', keys: 'Ctrl/⌘ N', run: () => { setNavView('all'); onNewNote(); } },
     { label: 'Nowy folder', run: () => createFolder() },
@@ -366,7 +400,7 @@ function setupEventListeners() {
   }));
   $('sortSelect').addEventListener('change', (e) => { state.currentSort = e.target.value; saveSettings(); renderNotes(); });
 
-  document.querySelectorAll('.workspace-select').forEach((sel) => sel.addEventListener('change', (e) => { closeSidebar(); switchWorkspace(e.target.value); }));
+  $('wsList').addEventListener('click', (e) => { const b = e.target.closest('[data-ws-switch]'); if (b) { closeSidebar(); switchWorkspace(b.dataset.wsSwitch); } });
   $('newWorkspaceBtn').addEventListener('click', createWorkspace);
   $('renameWorkspaceBtn').addEventListener('click', renameWorkspace);
   $('deleteWorkspaceBtn').addEventListener('click', deleteWorkspace);

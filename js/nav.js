@@ -8,6 +8,7 @@ export function setView(screen) {
   ['home', 'notes', 'tasks', 'graph', 'editor'].forEach((v) => $(v + 'View').classList.toggle('active', v === screen));
   document.body.dataset.screen = screen;
   if (screen !== 'editor') document.body.classList.remove('focus');
+  if (screen !== 'notes' && screen !== 'editor' && document.body.classList.contains('selecting')) document.getElementById('selectCancelBtn').click();
   $('mainContent').scrollTop = 0;
   ['notesView', 'editorView'].forEach((id) => { $(id).scrollTop = 0; });
 }

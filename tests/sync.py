@@ -64,7 +64,7 @@ try:
         A.click('#newFolderBtn'); A.fill('.modal-input', 'Praca'); A.press('.modal-input', 'Enter'); A.wait_for_timeout(150); sync(A); sync(B)
         check('foldery docierają', B.locator('.folder-item:has-text("Praca")').count() == 1)
         # kosz i trwałe usunięcie
-        A.locator('.note-card:has(h3:has-text("Z drugiego"))').click(); A.wait_for_selector('#editorView.active'); A.click('#deleteBtn'); A.wait_for_selector('#notesView.active'); A.wait_for_timeout(200)
+        A.locator('.note-card:has(h3:has-text("Z drugiego"))').click(); A.wait_for_selector('#editorView.active'); A.click('#noteMenuBtn'); A.click('#deleteBtn'); A.wait_for_selector('#notesView.active'); A.wait_for_timeout(200)
         sync(A); sync(B)
         check('kosz dociera', B.evaluate('!!nexus.state.notes.find(n => n.title === "Z drugiego").deleted'))
         A.evaluate('(async()=>{const n=nexus.state.notes.find(n=>n.title==="Z drugiego");await nexus.actions.purgeNote(n.id);nexus.hooks.renderAll()})()'); A.wait_for_timeout(100)
@@ -111,11 +111,11 @@ try:
         check('zwykła notatka dociera', 'Publiczna' in titles(B))
         rev = json.loads(http('/changes?since=0')[1])['rev']
         A.click('#newNoteBtn'); A.click('#accessSeg [data-private="1"]'); A.fill('#noteTitle', 'Moja prywatna'); A.fill('#noteContent', 'sekret')
-        check('nowa: przełącznik widoczny', A.is_visible('#privateBtn') and 'active' in A.get_attribute('#accessSeg [data-private="1"]', 'class'))
+        check('nowa: przełącznik widoczny', A.is_visible('#privateChip') and 'active' in A.get_attribute('#accessSeg [data-private="1"]', 'class'))
         A.set_input_files('#attachmentInput', TMP + '/t.png'); A.wait_for_selector('#attachmentsList .att img[src^="blob:"]'); A.wait_for_timeout(950); A.click('#backBtn'); A.wait_for_selector('#notesView.active'); sync(A); sync(B)
         check('nowa prywatna nie idzie na serwer', json.loads(http('/changes?since=0')[1])['rev'] == rev and 'Moja prywatna' not in titles(B))
         check('znaczek na karcie', A.locator('.note-card:has(h3:has-text("Moja prywatna")) .private-tag').count() == 1 and A.locator('.note-card:has(h3:has-text("Publiczna")) .private-tag').count() == 0)
-        A.locator('.note-card:has(h3:has-text("Publiczna"))').click(); A.wait_for_selector('#editorView.active'); A.click('#privateBtn'); A.wait_for_selector('.modal'); A.click('.modal .modal-btn.danger'); A.wait_for_timeout(200)
+        A.locator('.note-card:has(h3:has-text("Publiczna"))').click(); A.wait_for_selector('#editorView.active'); A.click('#noteMenuBtn'); A.click('#privateBtn'); A.wait_for_selector('.modal'); A.click('.modal .modal-btn.danger'); A.wait_for_timeout(200)
         check('przycisk w nagłówku pokazuje stan', A.get_attribute('#privateBtn', 'aria-pressed') == 'true'); A.click('#backBtn'); A.wait_for_selector('#notesView.active'); sync(A); sync(B)
         check('istniejąca prywatna znika z drugiego urządzenia', 'Publiczna' not in titles(B), titles(B))
         check('...i zostaje na swoim', content(A, 'Publiczna') == 'tekst do ukrycia')
@@ -129,11 +129,11 @@ try:
         # równoczesna zmiana na drugim urządzeniu nie nadpisuje prywatnej
         new_note(A, 'Wspólna', 'przed'); sync(A); sync(B)
         edit(B, 'Wspólna', 'zmiana z B')
-        A.locator('.note-card:has(h3:has-text("Wspólna"))').first.click(); A.wait_for_selector('#editorView.active'); A.click('#privateBtn'); A.wait_for_selector('.modal'); A.click('.modal .modal-btn.danger'); A.wait_for_timeout(200); A.click('#backBtn'); A.wait_for_selector('#notesView.active')
+        A.locator('.note-card:has(h3:has-text("Wspólna"))').first.click(); A.wait_for_selector('#editorView.active'); A.click('#noteMenuBtn'); A.click('#privateBtn'); A.wait_for_selector('.modal'); A.click('.modal .modal-btn.danger'); A.wait_for_timeout(200); A.click('#backBtn'); A.wait_for_selector('#notesView.active')
         sync(B); sync(A); sync(B)
         check('prywatna odporna na zmiany z innego urządzenia', content(A, 'Wspólna') == 'przed' and A.evaluate('nexus.state.notes.find(n=>n.title==="Wspólna").private===true'), content(A, 'Wspólna'))
         check('zmiana z B zostaje na B', content(B, 'Wspólna') == 'zmiana z B', content(B, 'Wspólna'))
-        A.locator('.note-card:has(h3:has-text("Wspólna"))').first.click(); A.wait_for_selector('#editorView.active'); A.click('#privateBtn'); A.wait_for_timeout(200); A.click('#backBtn'); A.wait_for_selector('#notesView.active'); sync(A); sync(B)
+        A.locator('.note-card:has(h3:has-text("Wspólna"))').first.click(); A.wait_for_selector('#editorView.active'); A.click('#noteMenuBtn'); A.click('#privateBtn'); A.wait_for_timeout(200); A.click('#backBtn'); A.wait_for_selector('#notesView.active'); sync(A); sync(B)
         A.locator('.note-card:has(h3:has-text("Publiczna"))').click(); A.wait_for_selector('#editorView.active'); A.click('#accessSeg [data-private="0"]'); A.wait_for_timeout(200); A.click('#backBtn'); A.wait_for_selector('#notesView.active'); sync(A); sync(B)
         check('z powrotem dostępna: wraca na drugie urządzenie', content(B, 'Publiczna') == 'tekst do ukrycia', titles(B))
         # zły kod

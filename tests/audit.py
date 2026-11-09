@@ -101,7 +101,7 @@ def run(name, W, H, touch):
         check(K + 'graph canvas fits inside screen', g['cb'] <= g['mb'] + 1 and g['h'] > 150, g); check(K + 'graph: no overflow', not overflow(pg), overflow(pg)); shot(pg, f'{name}_graph')
         pg.click('#closeGraphBtn'); pg.wait_for_selector('#notesView.active')
         # kosz
-        pg.locator('.note-card').first.click(); pg.wait_for_selector('#editorView.active'); pg.click('#deleteBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(300)
+        pg.locator('.note-card').first.click(); pg.wait_for_selector('#editorView.active'); pg.click('#noteMenuBtn'); pg.click('#deleteBtn'); pg.wait_for_selector('#notesView.active'); pg.wait_for_timeout(300)
         shot(pg, f'{name}_toast_undo')
         # okno modalne
         pg.click('#newWorkspaceBtn') if not mobile else None

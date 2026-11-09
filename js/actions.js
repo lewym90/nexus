@@ -87,3 +87,39 @@ export async function createQuickNote(raw, opts = {}) {
   }
   return note;
 }
+
+/** Przenosi notatki do przestrzeni. Folder zostaje tylko, jeśli należy do tej przestrzeni. */
+export async function moveNotes(ids, wsId) {
+  const keepFolders = new Set(state.folders.filter((f) => (f.workspace || 'default') === wsId).map((f) => f.id));
+  let n = 0;
+  for (const id of ids) {
+    const note = find(id);
+    if (!note || (note.workspace || 'default') === wsId) continue;
+    note.workspace = wsId;
+    if (note.folder && !keepFolders.has(note.folder)) note.folder = '';
+    note.updated = Date.now();
+    if (await persist(note)) n++;
+  }
+  return n;
+}
+
+export async function setFolder(ids, folderId) {
+  let n = 0;
+  for (const id of ids) {
+    const note = find(id);
+    if (!note) continue;
+    note.folder = folderId;
+    note.updated = Date.now();
+    if (await persist(note)) n++;
+  }
+  return n;
+}
+
+export async function trashMany(ids) {
+  for (const id of ids) {
+    const note = find(id);
+    if (note) { note.deleted = Date.now(); await persist(note); }
+  }
+  hooks.renderAll();
+  showToast(`Przeniesiono do kosza: ${ids.length}`, { label: 'Cofnij', onClick: async () => { for (const id of ids) { const n = find(id); if (n) { n.deleted = 0; await persist(n); } } hooks.renderAll(); } });
+}
