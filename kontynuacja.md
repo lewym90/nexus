@@ -26,6 +26,8 @@ Prywatne notatki PWA po polsku: czysty JS (moduły ES), bez frameworka i builda.
 - Tryb Focus (`js/focus.js`): tylko tytuł i treść, szerokość wąska/średnia/szeroka (zapamiętana), pełny ekran tam, gdzie przeglądarka pozwala; Esc kończy.
 - Paleta poleceń (`js/palette.js`): Ctrl/⌘ K, „⌘ K” w wyszukiwarce, „Polecenia” w menu; polecenia i notatki po tytule.
 - Przełączanie notatek bez czekania na zapis (`detachEditor` w `js/editor.js`): pola nowej notatki są gotowe od razu.
+- Czytelność (11.2026, po uwagach użytkownika: „za dużo ikonek, nie wiem, co robią”): w notatce tylko „Podgląd” i „Więcej” z podpisami, reszta w menu z pełnymi nazwami; pasek formatowania z napisami; podpisy w nagłówku od 1200 px. Zasada: każdy nowy przycisk ma podpis albo trafia do menu z nazwą.
+- Przestrzenie jako lista w menu bocznym (bez selecta w nagłówku). Przenoszenie: pole „Przestrzeń” w notatce, „Więcej → Przenieś do przestrzeni…”, tryb „Zaznacz” na liście (też przytrzymanie karty) z przeniesieniem do przestrzeni/folderu i usuwaniem (`js/select.js`).
 - ETAP I zakończony. Dalej ETAP II: historia wersji, rozbudowana synchronizacja (lista urządzeń, kolejka zmian), przywracanie pojedynczej notatki z kopii, karta odzyskiwania klucza, ekran „Gdzie są moje dane”.
 
 ## Synchronizacja

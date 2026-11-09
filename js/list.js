@@ -3,6 +3,7 @@ import { state, hooks, wsNotes, folderName, isLive, auraColor } from './state.js
 import { $, askConfirm } from './ui.js';
 import { escapeHtml, formatDate, plainPreview, matchesQuery, highlightText, snippetAround } from './util.js';
 import { passesFilters } from './search.js';
+import { onCardClick, isSelecting, reapplySelection, startSelecting } from './select.js';
 import { persist, trashNote, restoreNote, purgeNote } from './actions.js';
 
 const VIEW_TITLES = { all: 'Wszystkie notatki', recent: 'Ostatnie', favorites: 'Ulubione', journal: 'Dziennik', archive: 'Archiwum', trash: 'Kosz' };
@@ -94,6 +95,7 @@ export function renderNotes() {
         <span>${note.deleted ? 'usunięto ' : ''}${escapeHtml(formatDate(note.deleted || note.updated))}</span>
       </div>
     </article>`).join('');
+  if (isSelecting()) reapplySelection();
 }
 
 /* Gesty przesunięcia (delegacja zdarzeń) */
@@ -104,8 +106,21 @@ export function setupGridInteractions() {
   grid.addEventListener('click', (e) => {
     if (Date.now() < suppressClickUntil) return;
     const card = e.target.closest('.note-card');
-    if (card) hooks.openNote(card.dataset.id);
+    if (!card) return;
+    if (onCardClick(card.dataset.id)) return;
+    hooks.openNote(card.dataset.id);
   });
+  // przytrzymanie karty: zaznaczanie wielu notatek
+  let pressT = 0, pressCard = null;
+  const cancelPress = () => { clearTimeout(pressT); pressCard = null; };
+  grid.addEventListener('pointerdown', (e) => {
+    const c = e.target.closest('.note-card');
+    if (!c || isSelecting() || state.currentView === 'trash') return;
+    pressCard = c;
+    pressT = setTimeout(() => { if (pressCard) { suppressClickUntil = Date.now() + 600; startSelecting(pressCard.dataset.id); if (navigator.vibrate) navigator.vibrate(15); } }, 550);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => grid.addEventListener(ev, cancelPress));
+  grid.addEventListener('pointermove', (e) => { if (pressCard && (Math.abs(e.movementX) > 3 || Math.abs(e.movementY) > 3)) cancelPress(); });
   grid.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const card = e.target.closest('.note-card');
@@ -114,7 +129,7 @@ export function setupGridInteractions() {
 
   let sx = 0, sy = 0, card = null, horizontal = null, dx = 0;
   grid.addEventListener('touchstart', (e) => {
-    card = e.target.closest('.note-card');
+    card = isSelecting() ? null : e.target.closest('.note-card');
     if (!card || e.touches.length !== 1) { card = null; return; }
     sx = e.touches[0].clientX; sy = e.touches[0].clientY; horizontal = null; dx = 0;
   }, { passive: true });

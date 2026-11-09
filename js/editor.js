@@ -5,7 +5,7 @@ import { escapeHtml, extractWikiTargets, parseTags, plural, generateId } from '.
 import { putNote, putBlob, deleteBlobs, getBlobURL, revokeBlobURL, normalizeNote } from './db.js';
 import { renderMarkdown, isListLine, moveListBlock, shiftIndent } from './markdown.js';
 import { setView, pushScreen, showNotes, goBack } from './nav.js';
-import { trashNote, restoreNote, purgeNote, setArchived, persist } from './actions.js';
+import { trashNote, restoreNote, purgeNote, setArchived, persist, moveNotes } from './actions.js';
 
 let saveTimer = null;
 
@@ -56,6 +56,7 @@ function showEditor(focusTitle) {
   $('noteContent').value = note.content;
   $('tagsInput').value = note.tags.join(', ');
   hooks.updateFolderSelect(note.folder);
+  fillNoteWsSelect(note);
   setAura(note.aura);
   updateFlagIcons();
   renderAttachments();
@@ -70,31 +71,50 @@ function showEditor(focusTitle) {
   if (focusTitle) $('noteTitle').focus();
 }
 
+function fillNoteWsSelect(note) {
+  const sel = $('noteWsSelect');
+  sel.innerHTML = state.workspaces.map((w) => `<option value="${escapeHtml(w.id)}">${escapeHtml(w.name)}</option>`).join('');
+  sel.value = note.workspace || state.currentWorkspace;
+  sel.closest('.meta-row').style.display = state.workspaces.length > 1 ? '' : 'none';
+}
+
+/** Przenosi otwartą notatkę do innej przestrzeni (zostaje otwarta). */
+export async function moveCurrentNote(wsId) {
+  const ed = state.editing;
+  if (!ed || !wsId) return;
+  if (ed.isNew) { ed.note.workspace = wsId; fillNoteWsSelect(ed.note); return; } // zapisze się już w nowej przestrzeni
+  await saveCurrentNote();
+  const n = await moveNotes([ed.note.id], wsId);
+  fillNoteWsSelect(ed.note);
+  hooks.updateFolderSelect(ed.note.folder);
+  hooks.renderAll();
+  const name = (state.workspaces.find((w) => w.id === wsId) || {}).name || '';
+  if (n) showToast(`Przeniesiono do: ${name}`, wsId !== state.currentWorkspace ? { label: 'Przejdź', onClick: () => hooks.switchWorkspace(wsId) } : undefined);
+}
+
 function setAura(color) {
   document.querySelectorAll('.aura-dot').forEach((dot) => dot.classList.toggle('active', dot.dataset.color === color));
 }
 
 function updateFlagIcons() {
   const note = state.editing.note;
-  const fav = $('favoriteBtn'), pin = $('pinBtn'), arc = $('archiveBtn');
-  fav.classList.toggle('on-gold', note.favorite);
-  fav.setAttribute('aria-pressed', String(note.favorite));
-  fav.querySelector('svg').style.fill = note.favorite ? 'currentColor' : 'none';
-  pin.classList.toggle('on-accent', note.pinned);
-  pin.setAttribute('aria-pressed', String(note.pinned));
-  pin.querySelector('svg').style.fill = note.pinned ? 'currentColor' : 'none';
-  arc.classList.toggle('on-accent', note.archived);
-  arc.setAttribute('aria-pressed', String(note.archived));
-  arc.title = arc.ariaLabel = note.archived ? 'Przywróć z archiwum' : 'Archiwizuj';
+  const set = (id, on, onLabel, offLabel, cls = 'on-gold') => {
+    const b = $(id);
+    b.classList.toggle(cls, !!on);
+    b.setAttribute('aria-pressed', String(!!on));
+    const svg = b.querySelector('svg');
+    if (svg && (id === 'favoriteBtn' || id === 'pinBtn')) svg.style.fill = on ? 'currentColor' : 'none';
+    $(id + 'Label').textContent = on ? onLabel : offLabel;
+  };
+  set('favoriteBtn', note.favorite, 'Usuń z ulubionych', 'Dodaj do ulubionych');
+  set('pinBtn', note.pinned, 'Odepnij z góry listy', 'Przypnij na górze listy');
+  set('archiveBtn', note.archived, 'Przywróć z archiwum', 'Archiwizuj', 'on-accent');
   const priv = !!note.private;
-  const lock = $('privateBtn');
-  lock.classList.toggle('on-gold', priv);
-  lock.setAttribute('aria-pressed', String(priv));
-  lock.title = lock.ariaLabel = priv ? 'Notatka prywatna: tylko na tym urządzeniu' : 'Notatka dostępna na wszystkich urządzeniach';
+  set('privateBtn', priv, 'Udostępnij na wszystkich urządzeniach', 'Ustaw jako prywatną (tylko to urządzenie)');
   $('privateShackle').setAttribute('d', priv ? 'M8 11V7a4 4 0 0 1 8 0v4' : 'M8 11V7a4 4 0 0 1 7.5-2');
+  $('privateChip').hidden = !priv;
   document.querySelectorAll('#accessSeg .view-btn').forEach((b) => b.classList.toggle('active', (b.dataset.private === '1') === priv));
   $('trashBanner').style.display = note.deleted ? '' : 'none';
-  $('deleteBtn').title = $('deleteBtn').ariaLabel = note.deleted ? 'Usuń trwale' : 'Do kosza';
 }
 
 function updateWordCount() {
@@ -208,6 +228,7 @@ export function togglePreview() {
   const ta = $('noteContent');
   const prev = $('markdownPreview');
   $('previewToggle').classList.toggle('on-accent', state.isPreview);
+  $('previewLabel').textContent = state.isPreview ? 'Edytuj' : 'Podgląd';
   $('mdToolbar').style.display = state.isPreview ? 'none' : '';
   if (state.isPreview) {
     renderPreview();

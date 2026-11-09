@@ -60,13 +60,12 @@
       </div>
     </div>
     <div class="header-right">
-      <select id="workspaceSelect" class="workspace-select header-ws" aria-label="Przestrzeń robocza"></select>
-      <button class="icon-btn sync-status" id="syncStatusBtn" aria-label="Synchronizacja" title="Synchronizacja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.1 9.1 4.7 4.7 0 0 0 7 18.5z"/></svg><span class="status-dot off" id="syncDot"></span></button>
+      <button class="icon-btn sync-status" id="syncStatusBtn" aria-label="Synchronizacja" title="Synchronizacja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.1 9.1 4.7 4.7 0 0 0 7 18.5z"/></svg><span class="status-dot off" id="syncDot"></span><span class="hdr-lbl">Synchronizacja</span></button>
       <button class="icon-btn" id="themeToggle" data-act="theme" aria-label="Motyw" title="Motyw">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span class="hdr-lbl">Motyw</span>
       </button>
       <button class="icon-btn" id="graphBtn" data-go="graph" aria-label="Graf powiązań" title="Graf powiązań">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 8l4 4M16 8l-4 4M8 16l4-4M16 16l-4-4"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 8l4 4M16 8l-4 4M8 16l4-4M16 16l-4-4"/></svg><span class="hdr-lbl">Graf</span>
       </button>
       <button class="fab new-note-btn" id="newNoteBtn" aria-label="Nowa notatka">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -113,10 +112,10 @@
     </nav>
 
     <div class="sidebar-section ws-section">
-      <h3>Przestrzeń</h3>
-      <select id="workspaceSelectSide" class="workspace-select side-ws" aria-label="Przestrzeń robocza"></select>
+      <h3>Przestrzenie</h3>
+      <div id="wsList" class="ws-list"></div>
       <div class="inline-actions">
-        <button class="text-btn" id="newWorkspaceBtn">+ Nowa</button>
+        <button class="text-btn" id="newWorkspaceBtn">+ Nowa przestrzeń</button>
         <button class="text-btn" id="renameWorkspaceBtn">Zmień nazwę</button>
         <button class="text-btn danger" id="deleteWorkspaceBtn">Usuń</button>
       </div>
@@ -194,6 +193,7 @@
         <h1 id="viewTitle">Wszystkie notatki</h1>
         <button class="text-btn danger" id="emptyTrashBtn" style="display:none;">Opróżnij kosz</button>
         <div class="view-controls">
+          <button type="button" class="pill-btn" id="selectModeBtn" title="Zaznacz kilka notatek, aby je przenieść lub usunąć">Zaznacz</button>
           <div class="seg">
             <button class="view-btn active" data-layout="grid">Siatka</button>
             <button class="view-btn" data-layout="list">Lista</button>
@@ -266,42 +266,51 @@
         <input type="text" id="noteTitle" class="title-input" placeholder="Tytuł notatki…" aria-label="Tytuł notatki" autocomplete="off">
         <div class="editor-actions">
           <span id="saveStatus" class="save-status" aria-live="polite"></span>
-          <button class="icon-btn" id="privateBtn" aria-label="Notatka dostępna na wszystkich urządzeniach" title="Dostępna na wszystkich urządzeniach">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path id="privateShackle" d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
-          </button>
-          <button class="icon-btn" id="pinBtn" aria-label="Przypnij" title="Przypnij">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
-          </button>
-          <button class="icon-btn" id="favoriteBtn" aria-label="Ulubione" title="Ulubione">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          </button>
-          <button class="icon-btn" id="focusBtn" aria-label="Tryb Focus" title="Tryb Focus – tylko tytuł i treść">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg>
-          </button>
-          <button class="icon-btn" id="previewToggle" aria-label="Podgląd" title="Podgląd Markdown">
+          <span class="private-chip" id="privateChip" hidden>🔒 Tylko to urządzenie</span>
+          <button class="pill-btn" id="previewToggle" aria-label="Podgląd" title="Podgląd Markdown">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-          <button class="icon-btn" id="archiveBtn" aria-label="Archiwizuj" title="Archiwizuj">
+          <span id="previewLabel">Podgląd</span></button>
+          <div class="menu-wrap">
+            <button class="pill-btn" id="noteMenuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="noteMenu" title="Więcej opcji notatki">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg><span>Więcej</span>
+            </button>
+            <div class="note-menu" id="noteMenu" role="menu" hidden>
+            <button class="menu-item" id="pinBtn" aria-label="Przypnij" title="Przypnij">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+          <span class="lbl" id="pinBtnLabel">Przypnij na górze listy</span></button>
+            <button class="menu-item" id="favoriteBtn" aria-label="Ulubione" title="Ulubione">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span class="lbl" id="favoriteBtnLabel">Dodaj do ulubionych</span></button>
+            <button class="menu-item" id="focusBtn" aria-label="Tryb Focus" title="Tryb Focus – tylko tytuł i treść">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg>
+          <span class="lbl" id="focusBtnLabel">Tryb skupienia (sam tekst)</span></button>
+            <button class="menu-item" id="moveBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 13h6M13 10l3 3-3 3"/></svg><span class="lbl">Przenieś do przestrzeni…</span></button>
+            <button class="menu-item" id="privateBtn" aria-label="Notatka dostępna na wszystkich urządzeniach" title="Dostępna na wszystkich urządzeniach">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path id="privateShackle" d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
+          <span class="lbl" id="privateBtnLabel">Ustaw jako prywatną</span></button>
+            <button class="menu-item" id="archiveBtn" aria-label="Archiwizuj" title="Archiwizuj">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/></svg>
-          </button>
-          <button class="icon-btn delete-btn" id="deleteBtn" aria-label="Usuń" title="Usuń">
+          <span class="lbl" id="archiveBtnLabel">Archiwizuj</span></button>
+            <button class="menu-item danger" id="deleteBtn" aria-label="Usuń" title="Usuń">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </button>
+          <span class="lbl" id="deleteBtnLabel">Usuń notatkę</span></button>
+            </div>
+          </div>
         </div>
       </div>
         <div class="md-toolbar" id="mdToolbar" role="toolbar" aria-label="Formatowanie">
-          <button type="button" data-md="h" aria-label="Nagłówek"><b>H</b></button>
-          <button type="button" data-md="bold" aria-label="Pogrubienie"><b>B</b></button>
-          <button type="button" data-md="italic" aria-label="Kursywa"><i>I</i></button>
+          <button type="button" data-md="h" aria-label="Nagłówek"><b>H</b> Nagłówek</button>
+          <button type="button" data-md="bold" aria-label="Pogrubienie"><b>B</b> Pogrubienie</button>
+          <button type="button" data-md="italic" aria-label="Kursywa"><i>I</i> Kursywa</button>
           <button type="button" data-md="ul" aria-label="Lista">• Lista</button>
           <button type="button" data-md="task" aria-label="Zadanie">☐ Zadanie</button>
-          <button type="button" data-md="outdent" aria-label="Zmniejsz wcięcie">⇤</button>
-          <button type="button" data-md="indent" aria-label="Zwiększ wcięcie">⇥</button>
+          <button type="button" data-md="outdent" aria-label="Zmniejsz wcięcie">⇤ Wcięcie</button>
+          <button type="button" data-md="indent" aria-label="Zwiększ wcięcie">Wcięcie ⇥</button>
           <button type="button" data-md="table" aria-label="Tabela">▦ Tabela</button>
-          <button type="button" data-md="codeblock" aria-label="Blok kodu">{ }</button>
-          <button type="button" data-md="quote" aria-label="Cytat">❝</button>
-          <button type="button" data-md="code" aria-label="Kod">&lt;/&gt;</button>
-          <button type="button" data-md="link" aria-label="Link do notatki">[[ ]]</button>
+          <button type="button" data-md="codeblock" aria-label="Blok kodu">{ } Blok kodu</button>
+          <button type="button" data-md="quote" aria-label="Cytat">❝ Cytat</button>
+          <button type="button" data-md="code" aria-label="Kod">&lt;/&gt; Kod</button>
+          <button type="button" data-md="link" aria-label="Link do notatki">[[ ]] Link do notatki</button>
         </div>
       </div>
       <div class="trash-banner" id="trashBanner" style="display:none;">
@@ -324,6 +333,10 @@
           <div class="meta-row tags-input-wrapper">
             <span>Tagi:</span>
             <input type="text" id="tagsInput" placeholder="tagi oddzielone przecinkami" autocomplete="off" autocapitalize="none">
+          </div>
+          <div class="meta-row">
+            <span>Przestrzeń:</span>
+            <select id="noteWsSelect" aria-label="Przestrzeń notatki"></select>
           </div>
           <div class="meta-row">
             <span>Folder:</span>
@@ -358,6 +371,14 @@
       </div>
     </div>
   </main>
+  <div class="select-bar" id="selectBar" role="toolbar" aria-label="Zaznaczone notatki">
+    <span id="selectCount">Zaznaczono: 0</span>
+    <button type="button" class="pill-btn" id="selectAllBtn">Wszystkie</button>
+    <button type="button" class="pill-btn gold" id="selectMoveBtn">Przenieś…</button>
+    <button type="button" class="pill-btn" id="selectFolderBtn">Do folderu…</button>
+    <button type="button" class="pill-btn danger" id="selectDeleteBtn">Usuń</button>
+    <button type="button" class="pill-btn" id="selectCancelBtn">Anuluj</button>
+  </div>
   <div class="focus-bar" id="focusBar" aria-label="Tryb Focus">
     <button type="button" class="focus-pill" id="focusWidthBtn">Szerokość: średnia</button>
     <button type="button" class="focus-pill" id="focusFullBtn">Pełny ekran</button>
